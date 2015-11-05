@@ -5,10 +5,15 @@ use Data::Dumper;
 use Spreadsheet::Read;
 
 
+######################################################################
+# This provides the process-persistent mapping of column names
+# to column indices.  The data itself is private; accessor functions
+# are provided.
+#
 {
 	my $headerColumns = {};
 
-	# Sets process-persistent value in $headerColumns
+	# Invoked at startup to acquire and store the name->index mapping
 	sub learnColumnHeaders(@)
 	{
 		my @headers = @_;
@@ -20,7 +25,7 @@ use Spreadsheet::Read;
 		}
 	}
 
-	# Uses process-persistent value in $headerColumns
+	# Accessor of name->index mapping
 	sub rowIndexByHeader($)
 	{
 		my ($header) = @_;
@@ -31,7 +36,10 @@ use Spreadsheet::Read;
 
 
 
-
+######################################################################
+# This transformation removes the numeric prefix from the "location"
+# column.
+#
 sub remoteNumericPrefixFromBuildingName()
 {
 	return(
@@ -52,6 +60,10 @@ sub remoteNumericPrefixFromBuildingName()
 }
 
 
+######################################################################
+# This transformation adds a grade column, extracting the grade - where
+# it is present - from the "title" column.
+#
 sub extractTeacherGrade()
 {
 	my $headerRowHandler = sub {
@@ -79,6 +91,15 @@ sub extractTeacherGrade()
 }
 
 
+######################################################################
+# This is invoked at startup to generate the list of transformations
+# to be applied.  Ideally - satisfying open/closed - this would be
+# accompished via subclassing or some other safe extension mechanism.  
+#
+# I'm avoiding that to make this easy to transport.  Once this is in a 
+# stable location, though, this model should be revisited to permit 
+# easy addition of new transforms w/o having to touch existing code.
+#
 sub provideTransforms()
 {
 	my $transforms = [];
@@ -88,6 +109,9 @@ sub provideTransforms()
 }
 
 
+######################################################################
+# This is invoked to process the first/header row.
+#
 sub processHeaderRow($@)
 {
 	my ($transforms, @row) = @_;
@@ -105,6 +129,9 @@ sub processHeaderRow($@)
 }
 
 
+######################################################################
+# This is invoked to process each data row.
+#
 sub processRow($@)
 {
 	my ($transforms, @row) = @_;
@@ -129,6 +156,7 @@ sub main()
 
 	my $staff = ReadData('data/PTAStaff.2015-10-21.xlsx') or die "Cannot read file: $!";
 
+	# Get the sheet with the staff data:
 	my $page = $staff->[1];
 	my $pageMaxRow = $page->{maxrow};
 	my $pageMaxCol = $page->{maxcol};
@@ -139,11 +167,11 @@ sub main()
 	for my $row (1..$pageMaxRow) # Note: Row 1 is column headers
 	{
 		my @rowData = Spreadsheet::Read::cellrow($page, $row);
-		if ($row == 1) # Note: Row 1 is column headers
+		if ($row == 1) # Note: Row 1 is column headers:
 		{
 			@rowData = processHeaderRow($transforms, @rowData);
 		}
-		else # Data rows
+		else # Data rows:
 		{
 			@rowData = processRow($transforms, @rowData);
 		}
