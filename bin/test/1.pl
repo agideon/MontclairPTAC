@@ -6,15 +6,51 @@ use Spreadsheet::Read;
 
 
 
-sub extractTeacherGrade($)
+sub extractTeacherGrade()
 {
-	my @row = @_;
-	my $grade;
-	if ($row[3] =~ /(\d+)/)
+	my $headerRowHandler = sub {
+		my @row = @_;
+		push(@row, 'Grade');
+		return(@row);
+	};
+
+	my $dataRowHandler = sub {
+		my @row = @_;
+		my $grade;
+		if ($row[3] =~ /(\d+)/)
+		{
+			$grade = $1;
+		}
+		push(@row, $grade);
+		return(@row);
+	};
+
+	return(
+		{
+			'headerRow'		=> $headerRowHandler,
+			'dataRow'		=> $dataRowHandler,
+		});
+}
+
+
+sub provideTransforms()
+{
+	my $transforms = [];
+	push(@$transforms, extractTeacherGrade());
+	return($transforms);
+}
+
+
+sub processHeaderRow($@)
+{
+	my ($transforms, @row) = @_;
+	if (defined($transforms))
 	{
-		$grade = $1;
+		foreach my $transform (@$transforms)
+		{
+			@row = $transform->{'headerRow'}->(@row);
+		}
 	}
-	push(@row, $grade);
 	return(@row);
 }
 
@@ -26,7 +62,7 @@ sub processRow($@)
 	{
 		foreach my $transform (@$transforms)
 		{
-			@row = $transform->(@row);
+			@row = $transform->{'dataRow'}->(@row);
 		}
 	}
 	return(@row);
@@ -35,8 +71,8 @@ sub processRow($@)
 sub main()
 {
 	# Collect the set of transformations to perform on each row
-	my $transforms = [];
-	push(@$transforms, \&extractTeacherGrade);
+	my $transforms = provideTransforms();
+
 
 	my $staff = ReadData('data/PTAStaff.2015-10-21.xlsx') or die "Cannot read file: $!";
 	my $page = $staff->[1];
@@ -44,10 +80,17 @@ sub main()
 	my $pageMaxCol = $page->{maxcol};
 
 	# Loop over rows in sheet
-	for my $row (2..$pageMaxRow) # Note: Row 1 is column headers
+	for my $row (1..$pageMaxRow) # Note: Row 1 is column headers
 	{
 		my @rowData = Spreadsheet::Read::cellrow($page, $row);
-		@rowData = processRow($transforms, @rowData);
+		if ($row == 1) # Note: Row 1 is column headers
+		{
+			@rowData = processHeaderRow($transforms, @rowData);
+		}
+		else # Data rows
+		{
+			@rowData = processRow($transforms, @rowData);
+		}
 		print join(', ', map { defined($_) ? $_ : '***'; } @rowData), "\n";
 	}
 }
