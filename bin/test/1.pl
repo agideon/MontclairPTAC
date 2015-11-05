@@ -1,13 +1,5 @@
 #!/usr/bin/perl -w
 
-BEGIN
-{
-#	if ($ENV{'PERL5LIB'})
-#	{
-#		unshift(@INC, split(/:/, $ENV{'PERL5LIB'}));
-#	}
-}
-
 use strict;
 use Data::Dumper;
 use Spreadsheet::Read;
@@ -16,7 +8,6 @@ use Spreadsheet::Read;
 
 sub extractTeacherGrade($)
 {
-#	print "extractTeacherGrade()\n";
 	my @row = @_;
 	my $grade;
 	if ($row[3] =~ /(\d+)/)
