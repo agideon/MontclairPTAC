@@ -6,6 +6,25 @@ use Spreadsheet::Read;
 
 
 
+sub remoteNumericPrefixFromBuildingName()
+{
+	return(
+		{
+			'dataRow'		=> 
+				sub {
+					my @row = @_;
+					if ($row[2] && ($row[2] =~ /^[\s\d]+(.*)$/))
+					{
+						$row[2] = $1;
+					}
+					return(@row);
+			}
+		}
+		);
+		
+}
+
+
 sub extractTeacherGrade()
 {
 	my $headerRowHandler = sub {
@@ -37,6 +56,7 @@ sub provideTransforms()
 {
 	my $transforms = [];
 	push(@$transforms, extractTeacherGrade());
+	push(@$transforms, remoteNumericPrefixFromBuildingName());
 	return($transforms);
 }
 
@@ -48,7 +68,10 @@ sub processHeaderRow($@)
 	{
 		foreach my $transform (@$transforms)
 		{
-			@row = $transform->{'headerRow'}->(@row);
+			if ($transform->{'headerRow'})
+			{
+				@row = $transform->{'headerRow'}->(@row);
+			}
 		}
 	}
 	return(@row);
@@ -62,7 +85,10 @@ sub processRow($@)
 	{
 		foreach my $transform (@$transforms)
 		{
-			@row = $transform->{'dataRow'}->(@row);
+			if ($transform->{'dataRow'})
+			{
+				@row = $transform->{'dataRow'}->(@row);
+			}
 		}
 	}
 	return(@row);
