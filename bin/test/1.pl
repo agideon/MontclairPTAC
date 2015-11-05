@@ -5,6 +5,32 @@ use Data::Dumper;
 use Spreadsheet::Read;
 
 
+{
+	my $headerColumns = {};
+
+	# Sets process-persistent value in $headerColumns
+	sub learnColumnHeaders(@)
+	{
+		my @headers = @_;
+		my $index = 0;
+		foreach my $header (@headers)
+		{
+			$headerColumns->{lc($header)} = $index;
+			$index++;
+		}
+	}
+
+	# Uses process-persistent value in $headerColumns
+	sub rowIndexByHeader($)
+	{
+		my ($header) = @_;
+		my $index = $headerColumns->{lc($header)};
+		return($index);
+	}
+}
+
+
+
 
 sub remoteNumericPrefixFromBuildingName()
 {
@@ -13,9 +39,10 @@ sub remoteNumericPrefixFromBuildingName()
 			'dataRow'		=> 
 				sub {
 					my @row = @_;
-					if ($row[2] && ($row[2] =~ /^[\s\d]+(.*)$/))
+					my $index = rowIndexByHeader('LOCATION');
+					if ($row[$index] && ($row[$index] =~ /^[\s\d]+(.*)$/))
 					{
-						$row[2] = $1;
+						$row[$index] = $1;
 					}
 					return(@row);
 			}
@@ -101,9 +128,12 @@ sub main()
 
 
 	my $staff = ReadData('data/PTAStaff.2015-10-21.xlsx') or die "Cannot read file: $!";
+
 	my $page = $staff->[1];
 	my $pageMaxRow = $page->{maxrow};
 	my $pageMaxCol = $page->{maxcol};
+
+	learnColumnHeaders(Spreadsheet::Read::cellrow($page, 1));
 
 	# Loop over rows in sheet
 	for my $row (1..$pageMaxRow) # Note: Row 1 is column headers
