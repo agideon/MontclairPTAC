@@ -3,7 +3,7 @@
 use strict;
 use Data::Dumper;
 use Spreadsheet::Read;
-
+use Excel::Writer::XLSX;
 
 ######################################################################
 # This provides the process-persistent mapping of column names
@@ -154,10 +154,17 @@ sub main()
 	my $transforms = provideTransforms();
 
 
-	my $staff = ReadData('data/PTAStaff.2015-10-21.xlsx') or die "Cannot read file: $!";
+	my $staffIn = ReadData('data/PTAStaff.2015-10-21.xlsx') or die "Cannot read file: $!";
+	my $staffOut = Excel::Writer::XLSX->new('data/staff.out.xlsx') or die "Cannot write file: $!";
+
+
+	# Set up the output sheet
+	my $pageOut = $staffOut->add_worksheet('Staff Transformed') or die "Unable to create new output worksheet: $!";
+	my $format  = $staffOut->add_format();
+
 
 	# Get the sheet with the staff data:
-	my $page = $staff->[1];
+	my $page = $staffIn->[1];
 	my $pageMaxRow = $page->{maxrow};
 	my $pageMaxCol = $page->{maxcol};
 
@@ -175,7 +182,9 @@ sub main()
 		{
 			@rowData = processRow($transforms, @rowData);
 		}
-		print join(', ', map { defined($_) ? $_ : '***'; } @rowData), "\n";
+#		print join(', ', map { defined($_) ? $_ : '***'; } @rowData), "\n";
+
+		$pageOut->write_row($row - 1, 0, \@rowData);
 	}
 }
 
