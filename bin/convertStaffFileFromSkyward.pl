@@ -7,9 +7,11 @@ use Excel::Writer::XLSX;
 use Getopt::Long;
 
 ######################################################################
-# This provides the process-persistent mapping of column names
-# to column indices.  The data itself is private; accessor functions
-# are provided.
+# The idea is to provide a way to access the columns by column label.
+# Is this a good idea?  I don't know.  I suspect that column order is
+# more stable than column label, but this depends upon the person/program
+# generating the input files over time and both are somewhat unknown to me.
+# So: we'll see.
 #
 {
 	my $headerColumns = {};
@@ -39,7 +41,7 @@ use Getopt::Long;
 
 ######################################################################
 # This transformation removes the numeric prefix from the "location"
-# column.
+# column, making the location merely a building name.
 #
 sub remoteNumericPrefixFromBuildingName()
 {
@@ -95,7 +97,8 @@ sub extractTeacherGrade()
 ######################################################################
 # This is invoked at startup to generate the list of transformations
 # to be applied.  Ideally - satisfying open/closed - this would be
-# accompished via subclassing or some other safe extension mechanism.  
+# accompished via subclassing or a Factory or some other safe extension 
+# mechanism.  
 #
 # I'm avoiding that to make this easy to transport.  Once this is in a 
 # stable location, though, this model should be revisited to permit 
@@ -111,7 +114,8 @@ sub provideTransforms()
 
 
 ######################################################################
-# This is invoked to process the first/header row.
+# This is invoked to process the first/header row.  All transformatins
+# for these rows are applied.
 #
 sub processHeaderRow($@)
 {
@@ -131,7 +135,8 @@ sub processHeaderRow($@)
 
 
 ######################################################################
-# This is invoked to process each data row.
+# This is invoked to process each data row.  All transformations
+# for these rows are applied.
 #
 sub processRow($@)
 {
@@ -149,6 +154,9 @@ sub processRow($@)
 	return(@row);
 }
 
+######################################################################
+# Provide methods to accumulate and then acquire column widths.
+#
 {
 	my @columnWidths;
 	sub acquireColumnWidths(@)
@@ -195,16 +203,17 @@ FINI
 	my $transforms = provideTransforms();
 
 
+	# Open input and output files.
 	my $staffIn = ReadData($filenameIn, attr => 1) or die("Cannot read input file: $!\n");
 	my $staffOut = Excel::Writer::XLSX->new($filenameOut) or die("Cannot write output file: $!\n");
 
 
-	# Set up the output sheet
+	# Set up the output sheet.
 	my $pageOut = $staffOut->add_worksheet('Staff Transformed') or die "Unable to create new output worksheet: $!";
 	my $formatOut  = $staffOut->add_format();
 
 
-	# Get the sheet with the staff data:
+	# Get the sheet with the staff data, along with some important details about that sheet.
 	my $page = $staffIn->[1];
 	my $pageMaxRow = $page->{maxrow};
 	my $pageMaxCol = $page->{maxcol};
@@ -212,6 +221,7 @@ FINI
 #	print Dumper($attributesIn);
 
 
+	# Acquire column labels.
 	learnColumnHeaders(Spreadsheet::Read::cellrow($page, 1));
 
 	# Loop over rows in sheet
@@ -232,6 +242,8 @@ FINI
 		$pageOut->write_row($row - 1, 0, \@rowData);
 	}
 
+	# Set the width of each column in the output to fit the widest of that
+	# column's values.
 	{
 		my $index = 0;
 		foreach my $cellWidth (theColumnWidths())
