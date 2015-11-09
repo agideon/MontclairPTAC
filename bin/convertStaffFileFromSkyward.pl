@@ -7,6 +7,26 @@ use Excel::Writer::XLSX;
 use Getopt::Long;
 
 ######################################################################
+# Provide a mechanism whereby transformations may register themselves, 
+# as well as a mechanism for acquiring the list of transformations.
+#
+#
+{
+	my $transformations = [];
+
+	sub registerTransformation($)
+	{
+		push(@$transformations, $_[0]);
+	}
+
+	sub getTransformations()
+	{
+		return($transformations);
+	}
+}
+
+
+#####################################################################
 # The idea is to provide a way to access the columns by column label.
 # Is this a good idea?  I don't know.  I suspect that column order is
 # more stable than column label, but this depends upon the person/program
@@ -43,9 +63,8 @@ use Getopt::Long;
 # This transformation removes the numeric prefix from the "location"
 # column, making the location merely a building name.
 #
-sub remoteNumericPrefixFromBuildingName()
 {
-	return(
+	registerTransformation(
 		{
 			'dataRow'		=> 
 				sub {
@@ -67,7 +86,6 @@ sub remoteNumericPrefixFromBuildingName()
 # This transformation adds a grade column, extracting the grade - where
 # it is present - from the "title" column.
 #
-sub extractTeacherGrade()
 {
 	my $headerRowHandler = sub {
 		my @row = @_;
@@ -86,7 +104,7 @@ sub extractTeacherGrade()
 		return(@row);
 	};
 
-	return(
+	registerTransformation(
 		{
 			'headerRow'		=> $headerRowHandler,
 			'dataRow'		=> $dataRowHandler,
@@ -94,23 +112,6 @@ sub extractTeacherGrade()
 }
 
 
-######################################################################
-# This is invoked at startup to generate the list of transformations
-# to be applied.  Ideally - satisfying open/closed - this would be
-# accompished via subclassing or a Factory or some other safe extension 
-# mechanism.  
-#
-# I'm avoiding that to make this easy to transport.  Once this is in a 
-# stable location, though, this model should be revisited to permit 
-# easy addition of new transforms w/o having to touch existing code.
-#
-sub provideTransforms()
-{
-	my $transforms = [];
-	push(@$transforms, extractTeacherGrade());
-	push(@$transforms, remoteNumericPrefixFromBuildingName());
-	return($transforms);
-}
 
 
 ######################################################################
@@ -200,7 +201,8 @@ FINI
 	}
 
 	# Collect the set of transformations to perform on each row
-	my $transforms = provideTransforms();
+	my $transforms = getTransformations();
+	print "Transformations: ", Dumper($transforms);
 
 
 	# Open input and output files.
