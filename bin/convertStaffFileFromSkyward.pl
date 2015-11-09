@@ -118,9 +118,10 @@ use Getopt::Long;
 # This is invoked to process the first/header row.  All transformatins
 # for these rows are applied.
 #
-sub processHeaderRow($@)
+sub processHeaderRow(@)
 {
-	my ($transforms, @row) = @_;
+	my (@row) = @_;
+	my $transforms = getTransformations();
 	if (defined($transforms))
 	{
 		foreach my $transform (@$transforms)
@@ -139,9 +140,10 @@ sub processHeaderRow($@)
 # This is invoked to process each data row.  All transformations
 # for these rows are applied.
 #
-sub processRow($@)
+sub processRow(@)
 {
-	my ($transforms, @row) = @_;
+	my (@row) = @_;
+	my $transforms = getTransformations();
 	if (defined($transforms))
 	{
 		foreach my $transform (@$transforms)
@@ -200,11 +202,6 @@ FINI
 		die("\tCommand line options incorrect\n");
 	}
 
-	# Collect the set of transformations to perform on each row
-	my $transforms = getTransformations();
-	print "Transformations: ", Dumper($transforms);
-
-
 	# Open input and output files.
 	my $staffIn = ReadData($filenameIn, attr => 1) or die("Cannot read input file: $!\n");
 	my $staffOut = Excel::Writer::XLSX->new($filenameOut) or die("Cannot write output file: $!\n");
@@ -232,11 +229,11 @@ FINI
 		my @rowData = Spreadsheet::Read::cellrow($page, $row);
 		if ($row == 1) # Note: Row 1 is column headers:
 		{
-			@rowData = processHeaderRow($transforms, @rowData);
+			@rowData = processHeaderRow(@rowData);
 		}
 		else # Data rows:
 		{
-			@rowData = processRow($transforms, @rowData);
+			@rowData = processRow(@rowData);
 		}
 		acquireColumnWidths(@rowData);
 #		print join(', ', map { defined($_) ? $_ : '***'; } @rowData), "\n";
