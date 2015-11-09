@@ -4,6 +4,7 @@ use strict;
 use Data::Dumper;
 use Spreadsheet::Read;
 use Excel::Writer::XLSX;
+use Getopt::Long;
 
 ######################################################################
 # This provides the process-persistent mapping of column names
@@ -175,12 +176,27 @@ sub processRow($@)
 
 sub main()
 {
+	my ($filenameIn, $filenameOut);
+
+	my $inputErrors = 0;
+	GetOptions('in=s'	=>	\$filenameIn, 
+			   'out=s'	=>	\$filenameOut);
+	if (!$filenameIn) { $inputErrors = 1; }
+	if (!$filenameOut) { $inputErrors = 1; }
+	if ($inputErrors)
+	{
+		print STDERR <<FINI;
+Usage: $0 --in <input xlsx file> --out <output xlsx file>
+FINI
+		die("\tCommand line options incorrect\n");
+	}
+
 	# Collect the set of transformations to perform on each row
 	my $transforms = provideTransforms();
 
 
-	my $staffIn = ReadData('data/PTAStaff.2015-10-21.xlsx', attr => 1) or die "Cannot read file: $!";
-	my $staffOut = Excel::Writer::XLSX->new('data/staff.out.xlsx') or die "Cannot write file: $!";
+	my $staffIn = ReadData($filenameIn, attr => 1) or die("Cannot read input file: $!\n");
+	my $staffOut = Excel::Writer::XLSX->new($filenameOut) or die("Cannot write output file: $!\n");
 
 
 	# Set up the output sheet
