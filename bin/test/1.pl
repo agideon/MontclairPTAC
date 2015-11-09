@@ -148,25 +148,53 @@ sub processRow($@)
 	return(@row);
 }
 
+{
+	my @columnWidths;
+	sub acquireColumnWidths(@)
+	{
+		my @rowData = @_;
+		my $index = 0;
+		foreach my $cell (@rowData)
+		{
+			if ($cell)
+			{
+				if (!$columnWidths[$index] || ($columnWidths[$index] < length($cell)))
+				{
+					$columnWidths[$index] = length($cell);
+				}
+			}
+			$index++;
+		}
+	}
+	sub theColumnWidths()
+	{
+		return(@columnWidths);
+	}
+}
+
+
 sub main()
 {
 	# Collect the set of transformations to perform on each row
 	my $transforms = provideTransforms();
 
 
-	my $staffIn = ReadData('data/PTAStaff.2015-10-21.xlsx') or die "Cannot read file: $!";
+	my $staffIn = ReadData('data/PTAStaff.2015-10-21.xlsx', attr => 1) or die "Cannot read file: $!";
 	my $staffOut = Excel::Writer::XLSX->new('data/staff.out.xlsx') or die "Cannot write file: $!";
 
 
 	# Set up the output sheet
 	my $pageOut = $staffOut->add_worksheet('Staff Transformed') or die "Unable to create new output worksheet: $!";
-	my $format  = $staffOut->add_format();
+	my $formatOut  = $staffOut->add_format();
 
 
 	# Get the sheet with the staff data:
 	my $page = $staffIn->[1];
 	my $pageMaxRow = $page->{maxrow};
 	my $pageMaxCol = $page->{maxcol};
+	my $attributesIn = $page->{attr};
+#	print Dumper($attributesIn);
+
 
 	learnColumnHeaders(Spreadsheet::Read::cellrow($page, 1));
 
@@ -182,10 +210,22 @@ sub main()
 		{
 			@rowData = processRow($transforms, @rowData);
 		}
+		acquireColumnWidths(@rowData);
 #		print join(', ', map { defined($_) ? $_ : '***'; } @rowData), "\n";
 
 		$pageOut->write_row($row - 1, 0, \@rowData);
 	}
+
+	{
+		my $index = 0;
+		foreach my $cellWidth (theColumnWidths())
+		{
+			$pageOut->set_column($index, $index, $cellWidth);
+			$index++;
+		}
+	}
+
+
 }
 
 main();
