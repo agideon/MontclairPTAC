@@ -68,7 +68,7 @@ sub extractTeacherGrade()
 {
 	my $headerRowHandler = sub {
 		my @row = @_;
-		push(@row, 'Grade');
+		push(@row, 'GRADE');
 		return(@row);
 	};
 
