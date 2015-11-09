@@ -112,6 +112,32 @@ use Getopt::Long;
 }
 
 
+######################################################################
+# This transformation adds a grade column, extracting the grade - where
+# it is present - from the "title" column.
+#
+{
+	my $headerRowHandler = sub {
+		my @row = @_;
+		push(@row, 'FULL NAME');
+		return(@row);
+	};
+
+	my $dataRowHandler = sub {
+		my @row = @_;
+		my $name = join(' ', @row[1, 0]);
+		push(@row, $name);
+		return(@row);
+	};
+
+	registerTransformation(
+		{
+			'headerRow'		=> $headerRowHandler,
+			'dataRow'		=> $dataRowHandler,
+		});
+}
+
+
 
 
 ######################################################################
