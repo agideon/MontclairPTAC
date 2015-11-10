@@ -235,7 +235,11 @@ FINI
 
 	# Set up the output sheet.
 	my $pageOut = $staffOut->add_worksheet('Staff Transformed') or die "Unable to create new output worksheet: $!";
-	my $formatOut  = $staffOut->add_format();
+	my $formatOut  = $staffOut->add_format('align' => 'left');
+	$formatOut->set_align('left');
+	$formatOut->set_num_format('0');
+
+
 
 
 	# Get the sheet with the staff data, along with some important details about that sheet.
@@ -264,7 +268,7 @@ FINI
 		acquireColumnWidths(@rowData);
 #		print join(', ', map { defined($_) ? $_ : '***'; } @rowData), "\n";
 
-		$pageOut->write_row($row - 1, 0, \@rowData);
+		$pageOut->write_row($row - 1, 0, \@rowData, $formatOut);
 	}
 
 	# Set the width of each column in the output to fit the widest of that
