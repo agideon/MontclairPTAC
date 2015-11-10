@@ -96,7 +96,7 @@ use Getopt::Long;
 	my $dataRowHandler = sub {
 		my @row = @_;
 		my $grade;
-		if ($row[3] =~ /([k\d]+)/i)
+		if ($row[3] =~ /\b([k\d]+)/i)
 		{
 			$grade = uc($1);
 		}
