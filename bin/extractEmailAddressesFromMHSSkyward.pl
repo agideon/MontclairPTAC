@@ -39,6 +39,33 @@ use FileHandle;
 
 
 
+sub compareEmailAddressPairByServer($$)
+{
+    my ($a, $b) = @_;
+    my ($a_base, $a_host, $b_base, $b_host);
+    if ($a =~ /^([^@]*)@(.*)$/)
+    {
+	($a_base, $a_host) = ($1, $2);
+    }
+    else
+    {
+	($a_base, $a_host) = ($a, ''); # Should never occur!
+    }
+    if ($b =~ /^([^@]*)@(.*)$/)
+    {
+	($b_base, $b_host) = ($1, $2);
+    }
+    else
+    {
+	($b_base, $b_host) = ($b, ''); # Should never occur!
+    }
+    my $rval = lc($a_host) cmp lc($b_host);
+    if ($rval == 0)
+    {
+	$rval = lc($a_base) cmp lc($b_base);
+    }
+    return($rval);
+}
 
 
 
@@ -102,9 +129,25 @@ FINI
 		}
 	    }
 	}
-	my @uniqueEmailAddresses = sort { lc($a) cmp lc($b); } keys(%emailAddresses);
+	my (@goodAddress, @badAddress);
+	for my $address (keys(%emailAddresses))
+	{
+	    if ($address =~ /^\s*(([^@]*)@(([^\.@]*)\.)+[^\.@]{2,3})\.?\s*$/)
+	    {
+		push(@goodAddress, $1);
+	    }
+	    else
+	    {
+		push(@badAddress, $address);
+	    }
+	}
+
+	my @uniqueEmailAddresses = sort { compareEmailAddressPairByServer($a, $b); } @goodAddress;
+
 	print $mhsStudentsOut join("\n", @uniqueEmailAddresses), "\n";
 	print scalar(@uniqueEmailAddresses), ' addresses written to ', $filenameOut, "\n";
+
+	print 'Bad addresses: ', join(', ', @badAddress), "\n";
 }
 
 main();
