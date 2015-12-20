@@ -1,0 +1,2 @@
+export PERL5LIB=${HOME}/perl5/share/perl5:${HOME}/perl5/lib64/perl5:${HOME}/perl5/lib/perl5
+
