@@ -113,8 +113,8 @@ use Getopt::Long;
 
 
 ######################################################################
-# This transformation adds a grade column, extracting the grade - where
-# it is present - from the "title" column.
+# This transformation adds a "full name" column, extracting the first
+# and last names from separate fields,
 #
 {
 	my $headerRowHandler = sub {
