@@ -141,6 +141,53 @@ use Getopt::Long;
 
 
 ######################################################################
+# This transformation adds a house column, currently blank.
+#
+{
+	my $headerRowHandler = sub {
+		my @row = @_;
+		push(@row, 'HOUSE');
+		return(@row);
+	};
+
+	my $dataRowHandler = sub {
+		my @row = @_;
+		push(@row, '');
+		return(@row);
+	};
+
+	registerTransformation(
+		{
+			'headerRow'		=> $headerRowHandler,
+			'dataRow'		=> $dataRowHandler,
+		});
+}
+
+######################################################################
+# This transformation adds a room column, currently blank.
+#
+{
+	my $headerRowHandler = sub {
+		my @row = @_;
+		push(@row, 'ROOM');
+		return(@row);
+	};
+
+	my $dataRowHandler = sub {
+		my @row = @_;
+		push(@row, '');
+		return(@row);
+	};
+
+	registerTransformation(
+		{
+			'headerRow'		=> $headerRowHandler,
+			'dataRow'		=> $dataRowHandler,
+		});
+}
+
+
+######################################################################
 # This is invoked to process the first/header row.  All transformatins
 # for these rows are applied.
 #
