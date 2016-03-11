@@ -64,6 +64,12 @@ use Getopt::Long;
 # column, making the location merely a building name.
 #
 {
+    my $schoolNameTranslations =
+    {
+	'HIGH SCHOOL' => 'MHS',
+	'MT. HEBRON' => 'MTHEBRON',
+    };
+
 	registerTransformation(
 		{
 			'dataRow'		=> 
@@ -74,6 +80,7 @@ use Getopt::Long;
 					{
 						$row[$index] = $1;
 					}
+					$row[$index] = $schoolNameTranslations->{$row[$index]} || $row[$index];
 					return(@row);
 			}
 		}
