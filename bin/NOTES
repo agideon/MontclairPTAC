@@ -1,2 +1,34 @@
-export PERL5LIB=${HOME}/perl5/share/perl5:${HOME}/perl5/lib64/perl5:${HOME}/perl5/lib/perl5
+PATH="${HOME}/perl5/bin${PATH:+:${PATH}}"; export PATH;
+PERL5LIB="${HOME}/perl5/lib/perl5${PERL5LIB:+:${PERL5LIB}}"; export PERL5LIB;
+PERL_LOCAL_LIB_ROOT="${HOME}/perl5${PERL_LOCAL_LIB_ROOT:+:${PERL_LOCAL_LIB_ROOT}}"; export PERL_LOCAL_LIB_ROOT;
+PERL_MB_OPT="--install_base \"${HOME}/perl5\""; export PERL_MB_OPT;
+PERL_MM_OPT="INSTALL_BASE=${HOME}/perl5"; export PERL_MM_OPT;
+
+
+This is a list of packages installed via cpan.  It is certainly
+not a minimal required list, nor is the ordering optimized.
+
+Spreadsheet::Read
+Text::CSV_XS
+Text::CSV
+Text::CSV_PP
+HTML::TreeBuilder
+Tie::IxHash
+HTML::Entities::Numbered
+XML::Twig
+XML::Parser - needs expat-devel RPM
+Spreadsheet::ParseXLSX
+Spreadsheet::XLSX
+Excel::Writer::XLSX
+
+
+
+
+
+Not used (but would have been desirable):
+Date::Calc
+Date::Manip
+HTML::Tidy - needs RPM tidyp but looks for tidyp.h in /usr/include instead of /usr/include/tidyp
+
+
 
