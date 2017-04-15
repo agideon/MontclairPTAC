@@ -66,6 +66,7 @@ use Getopt::Long;
 {
     my $schoolNameTranslations =
     {
+	'Montclair High School' => 'MHS',
 	'HIGH SCHOOL' => 'MHS',
 	'MT. HEBRON' => 'MTHEBRON',
     };
@@ -75,12 +76,13 @@ use Getopt::Long;
 			'dataRow'		=> 
 				sub {
 					my @row = @_;
-					my $index = rowIndexByHeader('LOCATION');
+					my $index = rowIndexByHeader('LOCATION') || rowIndexByHeader('School Name');
 					if ($row[$index] && ($row[$index] =~ /^[\s\d]+(.*)$/))
 					{
 						$row[$index] = $1;
 					}
-					$row[$index] = $schoolNameTranslations->{$row[$index]} || $row[$index];
+					# Note: Forcing to upper case
+					$row[$index] = uc($schoolNameTranslations->{$row[$index]} || $row[$index]);
 					return(@row);
 			}
 		}
@@ -132,7 +134,8 @@ use Getopt::Long;
 
 	my $dataRowHandler = sub {
 		my @row = @_;
-		my $name = join(' ', @row[1, 0]);
+		my $name = join(' ', @row[rowIndexByHeader('First Name'), 
+					  rowIndexByHeader('Last Name')]);
 		push(@row, $name);
 		return(@row);
 	};
@@ -171,7 +174,7 @@ use Getopt::Long;
 }
 
 ######################################################################
-# This transformation adds a room column, currently blank.
+# This transformation adds a room column.
 #
 {
 	my $headerRowHandler = sub {
@@ -182,7 +185,8 @@ use Getopt::Long;
 
 	my $dataRowHandler = sub {
 		my @row = @_;
-		push(@row, '');
+		push(@row, 
+		     @row[rowIndexByHeader('Homeroom')]);
 		return(@row);
 	};
 
@@ -288,7 +292,7 @@ FINI
 
 
 	# Set up the output sheet.
-	my $pageOut = $staffOut->add_worksheet('Staff Transformed') or die "Unable to create new output worksheet: $!";
+	my $pageOut = $staffOut->add_worksheet('Students Transformed') or die "Unable to create new output worksheet: $!";
 	my $formatOut  = $staffOut->add_format('align' => 'left');
 	$formatOut->set_align('left');
 	$formatOut->set_num_format('0');
@@ -320,7 +324,7 @@ FINI
 			@rowData = processRow(@rowData);
 		}
 		acquireColumnWidths(@rowData);
-#		print join(', ', map { defined($_) ? $_ : '***'; } @rowData), "\n";
+		print join(', ', map { defined($_) ? $_ : '***'; } @rowData), "\n";
 
 		$pageOut->write_row($row - 1, 0, \@rowData, $formatOut);
 	}
