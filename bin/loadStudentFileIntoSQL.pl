@@ -296,14 +296,14 @@ sub processSimpleResults($$)
 
 
 use constant studentFields => ('ID', 'Date Of Birth', 'Last Name', 'First Name', 'Grade');
-sub getStudentID($$$$)
+sub getStudentID($$$$$)
 {
-    my ($dbh, $student, $homeroomID, $familyCodeID) = @_;
+    my ($dbh, $student, $schoolID, $homeroomID, $familyCodeID) = @_;
 
     # Note Convertion of date format using str_to_date - assumes a given format in the input
     my $query = <<FINI;
-    insert ignore into student(district_student_id, first_name, last_name, date_of_birth, grade, homeroom_id, family_code_id)
-	select ?, ?, ?, str_to_date(?,'%m/%d/%Y'), ?, ?, ?;
+    insert ignore into student(district_student_id, first_name, last_name, date_of_birth, grade, school_id, homeroom_id, family_code_id)
+	select ?, ?, ?, str_to_date(?,'%m/%d/%Y'), ?, ?, ?, ?;
     select student_id from student where district_student_id = ?
 FINI
 
@@ -314,10 +314,11 @@ FINI
     $statement->bind_param(3, $student->{'Last Name'});
     $statement->bind_param(4, $student->{'Date Of Birth'});
     $statement->bind_param(5, $student->{'Grade'});
-    $statement->bind_param(6, $homeroomID);
-    $statement->bind_param(7, $familyCodeID);
+    $statement->bind_param(6, $schoolID);
+    $statement->bind_param(7, $homeroomID);
+    $statement->bind_param(8, $familyCodeID);
 
-    $statement->bind_param(8, $student->{'ID'}, { TYPE => SQL_VARCHAR }); # Force non-numeric type assumption
+    $statement->bind_param(9, $student->{'ID'}, { TYPE => SQL_VARCHAR }); # Force non-numeric type assumption
 
     return(processSimpleResults($statement, 2));
 }
@@ -470,25 +471,17 @@ FINI
 			my $rowData = processRow(\@rowHeaders, @rowData);
 #			print join(', ', map { defined($_) ? $_ : '***'; } @rowData), "\n";
 			print Dumper($rowData);
-			my %schoolData = map { $_ => $rowData->{$_} } schoolFields;
-			print "School: ", Dumper(\%schoolData);
-			my %familyCode = map { $_ => $rowData->{$_} } ('Family Code');
-			print "Family Code: ", Dumper(\%familyCode);
-
-			my %studentData = map { $_ => $rowData->{$_} } studentFields;
-			print "Student: ", Dumper(\%studentData);
-
 			if (1)
 			{
 			    eval
 			    {
-				my $schoolID = getSchoolID($dbh, \%schoolData);
+				my $schoolID = getSchoolID($dbh, $rowData);
 				print "School ID: ", $schoolID, "\n";
-				my $familyCodeID = getFamilyCodeID($dbh, \%familyCode);
+				my $familyCodeID = getFamilyCodeID($dbh, $rowData);
 				print "Family Code ID: ", $familyCodeID, "\n";
 				my $homeroomID = getHomeroomID($dbh, $rowData, $schoolID);
 				print "Homeroom ID: ", $homeroomID, "\n";
-				my $studentID = getStudentID($dbh, $rowData, $homeroomID, $familyCodeID);
+				my $studentID = getStudentID($dbh, $rowData, $schoolID, $homeroomID, $familyCodeID);
 				print "Student ID: ", $studentID, "\n";
 			    };
 			    if ($@)

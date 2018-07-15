@@ -68,13 +68,14 @@ create table homeroom
 );
 
 /*
- * This joins to homeroom instead of school given that - as far as I can see - 
- * homeroom joins to school.  Note that the Genesis data dictionary does
- * not enforce this.  In that schema, both school and homeroom are attributes
- * of the Student table.  There are also School and SchoolRoom tables.  This
- * means that a student could be "in" a school but have a homeroom in a different
- * school.  That seems odd...though I suppose it is not impossible.  Perhaps this
- * should account for that too?
+ * This joins to both homeroom and school even though homeroom also
+ * joins to school.  This mimics what I've found in the Genesis 
+ * schema, and it does make possible the admittedly odd, but not
+ * impossible, case of a student "in" one school but with a homeroom
+ * in another.
+ * 
+ * Given how the spreadsheet is currently built, this cannot occur in
+ * the data we're sent.  But the spreadsheet's design is subject to change.
  */
 create table student
 (
@@ -90,6 +91,9 @@ create table student
 
 	date_of_birth	date not null,
 
+	school_id	int not null,
+	foreign key (school_id) references school(school_id),
+	
 	homeroom_id	int not null,
 	foreign key (homeroom_id) references homeroom(homeroom_id),
 
