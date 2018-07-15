@@ -12,6 +12,11 @@ create table school
 );
 
 /* Permits multiple aliases for a single school */
+# Note: Engine not explicitly set. Is that a problem?  On my server, 
+#	SELECT @@default_storage_engine;
+# returns InnoDB
+#
+
 create table school_name
 (
 	school_name_id	INT AUTO_INCREMENT NOT NULL,
