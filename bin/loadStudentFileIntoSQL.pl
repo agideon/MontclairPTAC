@@ -292,7 +292,12 @@ FINI
     {
 	$resultSet++;
 	my $rowCount = $statement->rows;
-	if ($rowCount > 0)
+	my $columnCount = $statement->{'NUM_OF_FIELDS'} or 0;
+
+	# It seems that an insert returns a row count of 1 (or perhaps more than that for multivalued inserts)
+	# but a column count of 0 or undef.  So both should be checked (though perhaps only columnCount
+	# is strictly required?).
+	if (($rowCount > 0) && ($columnCount))
 	{
 #	    print "Rows from result set ", $resultSet, "...\n";
 	    while (my @row = $statement->fetchrow_array())
@@ -303,7 +308,7 @@ FINI
 	}
 	else
 	{
-#	    print "Skipping retrieval for result set ", $resultSet, "\n";
+	    print "Skipping retrieval for result set ", $resultSet, ' with row count:', $rowCount, ' and column count: ', $columnCount, "\n";
 	}
     } while ($statement->more_results);
     return($schoolID);
@@ -344,7 +349,11 @@ FINI
 	# Also consider processing in "column first" order.  That is: all school data, then all student data, then all contact data.
 	# This permits multivalued inserts if one assumes that this is loading into a clean/empty database.
 	my $dsn = "DBI:mysql:database=$dbName;host=$dbHostname;port=$dbPort;mysql_multi_statements=1";
-	my $dbh = DBI->connect($dsn, $dbUsername, $dbPassword) or die("Unable to connect to db: " . $DBI::errstr);
+	my $dbh = DBI->connect($dsn, $dbUsername, $dbPassword,
+			       {
+				   AutoCommit => 0,
+			       },
+	    ) or die("Unable to connect to db: " . $DBI::errstr);
 	
 
 	# Open input and output files.
@@ -380,11 +389,26 @@ FINI
 #			print "Headers: ", Dumper(\@rowHeaders), "\n";
 			my $rowData = processRow(\@rowHeaders, @rowData);
 #			print join(', ', map { defined($_) ? $_ : '***'; } @rowData), "\n";
-			print Dumper($rowData);
+#			print Dumper($rowData);
 			my %schoolData = map { $_ => $rowData->{$_} } schoolFields;
 			print "School: ", Dumper(\%schoolData);
-			my $schoolID = getSchoolID($dbh, \%schoolData);
-			print "School ID: ", $schoolID, "\n";
+
+
+			eval
+			{
+			    my $schoolID = getSchoolID($dbh, \%schoolData);
+			    print "School ID: ", $schoolID, "\n";
+			};
+			if ($@)
+			{
+			    print "Rollback transaction\n";
+			    $dbh->rollback;
+			}
+			else
+			{
+			    print "Commit transaction\n";
+			    $dbh->commit;
+			}
 		}
 
 	}
