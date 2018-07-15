@@ -3,6 +3,9 @@ create table school
 	school_id	INT AUTO_INCREMENT NOT NULL,
 	primary key(school_id),
 
+	district_school_id	varchar(50) not null,
+	unique key (district_school_id),
+
 	canonical_school_name	varchar(50),
 	unique key(canonical_school_name)
 
@@ -37,8 +40,8 @@ create table student
 	student_id	INT AUTO_INCREMENT NOT NULL,
 	primary key(student_id),
 
-	district_id	varchar(50) not null,
-	unique key (district_id),
+	district_student_id	varchar(50) not null,
+	unique key (district_student_id),
 
 
 
