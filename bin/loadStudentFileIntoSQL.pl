@@ -298,11 +298,11 @@ sub processSimpleResults($$)
 use constant studentFields => ('ID', 'Date Of Birth', 'Last Name', 'First Name', 'Grade');
 sub getStudentID($$$$)
 {
-    my ($dbh, $student, $schoolID, $familyCodeID) = @_;
+    my ($dbh, $student, $homeroomID, $familyCodeID) = @_;
 
     # Note Convertion of date format using str_to_date - assumes a given format in the input
     my $query = <<FINI;
-    insert ignore into student(district_student_id, first_name, last_name, date_of_birth, grade, school_id, family_code_id)
+    insert ignore into student(district_student_id, first_name, last_name, date_of_birth, grade, homeroom_id, family_code_id)
 	select ?, ?, ?, str_to_date(?,'%m/%d/%Y'), ?, ?, ?;
     select student_id from student where district_student_id = ?
 FINI
@@ -314,13 +314,38 @@ FINI
     $statement->bind_param(3, $student->{'Last Name'});
     $statement->bind_param(4, $student->{'Date Of Birth'});
     $statement->bind_param(5, $student->{'Grade'});
-    $statement->bind_param(6, $schoolID);
+    $statement->bind_param(6, $homeroomID);
     $statement->bind_param(7, $familyCodeID);
 
     $statement->bind_param(8, $student->{'ID'}, { TYPE => SQL_VARCHAR }); # Force non-numeric type assumption
 
     return(processSimpleResults($statement, 2));
 }
+
+# Note: This assumes that every row with a given (school,homeroom) will have the same teacher.
+sub getHomeroomID($$$)
+{
+    my ($dbh, $input, $schoolID) = @_;
+    my $query = <<FINI;
+    insert ignore into homeroom(room, teacher, school_id) values (?, ?, ?);
+    select homeroom_id from homeroom where room = ? AND school_id = ?;
+FINI
+    my $statement = $dbh->prepare($query) or die("Unable to prepare query " . $query . ": " . $dbh->err . ": " . $dbh->errstr);
+
+    # Some student rows from the district leave homeroom and teacher blank
+    my ($homeroom, $teacher) = ($input->{'ROOM'} || '', $input->{'Homeroom Teacher'} || '');
+
+
+    $statement->bind_param(1, $homeroom, { TYPE => SQL_VARCHAR }); # Force non-numeric type assumption
+    $statement->bind_param(2, $teacher);
+    $statement->bind_param(3, $schoolID);
+
+    $statement->bind_param(4, $homeroom, { TYPE => SQL_VARCHAR }); # Force non-numeric type assumption
+    $statement->bind_param(5, $schoolID);
+
+    return(processSimpleResults($statement, 2));
+}
+
 
 
 sub getFamilyCodeID($$)
@@ -461,7 +486,9 @@ FINI
 				print "School ID: ", $schoolID, "\n";
 				my $familyCodeID = getFamilyCodeID($dbh, \%familyCode);
 				print "Family Code ID: ", $familyCodeID, "\n";
-				my $studentID = getStudentID($dbh, \%studentData, $schoolID, $familyCodeID);
+				my $homeroomID = getHomeroomID($dbh, $rowData, $schoolID);
+				print "Homeroom ID: ", $homeroomID, "\n";
+				my $studentID = getStudentID($dbh, $rowData, $homeroomID, $familyCodeID);
 				print "Student ID: ", $studentID, "\n";
 			    };
 			    if ($@)

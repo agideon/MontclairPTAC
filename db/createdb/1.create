@@ -1,3 +1,10 @@
+/*
+ * Note: Engine not explicitly set. Is that a problem?  On my server, 
+ *	SELECT @@default_storage_engine;
+ * returns InnoDB
+ */
+
+
 create table school
 (
 	school_id	INT AUTO_INCREMENT NOT NULL,
@@ -12,11 +19,6 @@ create table school
 );
 
 /* Permits multiple aliases for a single school */
-# Note: Engine not explicitly set. Is that a problem?  On my server, 
-#	SELECT @@default_storage_engine;
-# returns InnoDB
-#
-
 create table school_name
 (
 	school_name_id	INT AUTO_INCREMENT NOT NULL,
@@ -30,6 +32,15 @@ create table school_name
 );
 
 
+/*
+ * This is something the district sends.  It is found in the Genesis schema
+ * described at http://www.plainfieldnjk12.org/Departments/Genesis/DATA%20DICTIONARY/Genesis%20Data%20Dictionary%20version%202.pdf
+ * (page 7) in both the Student and Address tables.  My observation is that
+ * this does actually correspond to some concept of "family": Both my
+ * sons have a shared code, and nobody else has that code.  I've seen the
+ * same for families I've checked.  I don't know how this is used for
+ * more complex family structures, though.
+ */
 create table family_code
 (
 	family_code_id	INT AUTO_INCREMENT NOT NULL,
@@ -39,32 +50,6 @@ create table family_code
 	unique key(code)
 );
 
-
-
-create table student
-(
-	student_id	INT AUTO_INCREMENT NOT NULL,
-	primary key(student_id),
-
-	district_student_id	varchar(50) not null,
-	unique key (district_student_id),
-
-
-
-	first_name	varchar(50) not null,
-	last_name	varchar(50) not null,
-
-	date_of_birth	date not null,
-
-	school_id	int not null,
-	foreign key (school_id) references school(school_id),
-
-	family_code_id	int not null,
-	foreign key (family_code_id) references family_code(family_code_id),
-
-	grade		int not null
-
-);
 
 
 
@@ -77,8 +62,44 @@ create table homeroom
 	foreign key (school_id) references school(school_id),
 	
 	room		varchar(50) not null,
-	teacher		varchar(50) not null
+	teacher		varchar(50) not null,
+
+	unique key (school_id, room)
 );
+
+/*
+ * This joins to homeroom instead of school given that - as far as I can see - 
+ * homeroom joins to school.  Note that the Genesis data dictionary does
+ * not enforce this.  In that schema, both school and homeroom are attributes
+ * of the Student table.  There are also School and SchoolRoom tables.  This
+ * means that a student could be "in" a school but have a homeroom in a different
+ * school.  That seems odd...though I suppose it is not impossible.  Perhaps this
+ * should account for that too?
+ */
+create table student
+(
+	student_id	INT AUTO_INCREMENT NOT NULL,
+	primary key(student_id),
+
+	district_student_id	varchar(50) not null,
+	unique key (district_student_id),
+
+
+	first_name	varchar(50) not null,
+	last_name	varchar(50) not null,
+
+	date_of_birth	date not null,
+
+	homeroom_id	int not null,
+	foreign key (homeroom_id) references homeroom(homeroom_id),
+
+	family_code_id	int not null,
+	foreign key (family_code_id) references family_code(family_code_id),
+
+	grade		int not null
+
+);
+
 
 create table student_contact
 (
