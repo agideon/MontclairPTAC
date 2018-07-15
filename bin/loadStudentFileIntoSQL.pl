@@ -241,34 +241,6 @@ sub processRow(@)
 	return(@row);
 }
 
-######################################################################
-# Provide methods to accumulate and then acquire column widths.
-#
-{
-	my @columnWidths;
-	sub acquireColumnWidths(@)
-	{
-		my @rowData = @_;
-		my $index = 0;
-		foreach my $cell (@rowData)
-		{
-			if ($cell)
-			{
-				if (!$columnWidths[$index] || ($columnWidths[$index] < length($cell)))
-				{
-					$columnWidths[$index] = length($cell);
-				}
-			}
-			$index++;
-		}
-	}
-	sub theColumnWidths()
-	{
-		return(@columnWidths);
-	}
-}
-
-
 sub main()
 {
 	my ($filenameIn);
@@ -315,7 +287,7 @@ FINI
 		{
 			@rowData = processRow(@rowData);
 		}
-		acquireColumnWidths(@rowData);
+
 		print join(', ', map { defined($_) ? $_ : '***'; } @rowData), "\n";
 
 	}
