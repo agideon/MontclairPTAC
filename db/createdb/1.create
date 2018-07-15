@@ -1,0 +1,92 @@
+create table school
+(
+	school_id	INT AUTO_INCREMENT NOT NULL,
+	primary key(school_id),
+
+	canonical_school_name	varchar(50),
+	unique key(canonical_school_name)
+
+);
+
+/* Permits multiple aliases for a single school */
+create table school_name
+(
+	school_name_id	INT AUTO_INCREMENT NOT NULL,
+	primary key(school_name_id),
+
+	school_name	varchar(50) not null,
+	unique key(school_name),
+
+	school_id	int not null,
+	foreign key (school_id) references school(school_id)
+);
+
+
+create table family_code
+(
+	family_code_id	INT AUTO_INCREMENT NOT NULL,
+	primary key(family_code_id),
+
+	code		varchar(50) not null
+);
+
+
+
+create table student
+(
+	student_id	INT AUTO_INCREMENT NOT NULL,
+	primary key(student_id),
+
+	district_id	varchar(50) not null,
+	unique key (district_id),
+
+
+
+	first_name	varchar(50) not null,
+	last_name	varchar(50) not null,
+
+	date_of_birth	date not null,
+
+	school_id	int not null,
+	foreign key (school_id) references school(school_id),
+
+	family_code_id	int not null,
+	foreign key (family_code_id) references family_code(family_code_id),
+
+	grade		int not null
+
+);
+
+
+
+create table homeroom
+(
+	homeroom_id	INT AUTO_INCREMENT NOT NULL,
+	primary key(homeroom_id),
+
+	school_id	int not null,
+	foreign key (school_id) references school(school_id),
+	
+	room		varchar(50) not null,
+	teacher		varchar(50) not null
+);
+
+create table student_contact
+(
+	student_contact_id	INT AUTO_INCREMENT NOT NULL,
+	primary key(student_contact_id),
+
+	first_name	varchar(50) not null,
+	last_name	varchar(50) not null,
+
+	street_number	varchar(50) not null,
+	street_name	varchar(50) not null,
+	city		varchar(50) not null,
+	state		varchar(50) not null,
+	zip		varchar(50) not null,
+	email		varchar(50) not null,
+	primary_phone	varchar(50) not null,
+	home_phone	varchar(50) not null,
+	cell_phone	varchar(50) not null,
+	house		varchar(50) not null
+);
