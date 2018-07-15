@@ -5,7 +5,8 @@ use Data::Dumper;
 use Spreadsheet::Read;
 use Excel::Writer::XLSX;
 use Getopt::Long;
-use DBI;
+use DBI qw(:sql_types);
+
 
 ######################################################################
 # Provide a mechanism whereby transformations may register themselves, 
@@ -259,6 +260,55 @@ sub processRow($@)
 
 use constant schoolFields => ('School', 'School Name');
 
+sub getSchoolID($$)
+{
+    my ($dbh, $school) = @_;
+    # Could also use INSERT INTO ... ON DUPLICATE ...
+    my $query = <<FINI;
+	insert ignore into school(district_school_id, canonical_school_name) values (?, ?);
+
+	insert ignore into school_name(school_id, school_name) select school_id, ? from school where district_school_id = ?;
+
+	select school_id from school where district_school_id = ?;
+FINI
+
+    my $statement = $dbh->prepare($query) or die("Unable to prepare query " . $query . ": " . $dbh->err . ": " . $dbh->errstr);
+
+    $statement->bind_param(1, $school->{'School'}, { TYPE => SQL_VARCHAR }); # Force non-numeric type assumption
+    $statement->bind_param(2, $school->{'School Name'});
+
+    $statement->bind_param(3, $school->{'School Name'});
+    $statement->bind_param(4, $school->{'School'}, { TYPE => SQL_VARCHAR }); # Force non-numeric type assumption
+
+    $statement->bind_param(5, $school->{'School'}, { TYPE => SQL_VARCHAR }); # Force non-numeric type assumption
+
+
+    $statement->execute() or die("Unable to execute query " . $query . ": " . $statement->err . ": " . $statement->errstr);
+    
+    my $schoolID = undef;
+
+    my $resultSet = 0;
+    do
+    {
+	$resultSet++;
+	my $rowCount = $statement->rows;
+	if ($rowCount > 0)
+	{
+#	    print "Rows from result set ", $resultSet, "...\n";
+	    while (my @row = $statement->fetchrow_array())
+	    {
+#		print "Row from result set ", $resultSet, ": ", join(', ', @row), "\n";
+		if ($resultSet == 3) { $schoolID = $row[0];}
+	    }
+	}
+	else
+	{
+#	    print "Skipping retrieval for result set ", $resultSet, "\n";
+	}
+    } while ($statement->more_results);
+    return($schoolID);
+}
+
 
 
 sub main()
@@ -289,8 +339,12 @@ FINI
 		die("\tCommand line options incorrect\n");
 	}
 
-	my $dsn = "DBI:mysql:database=$dbName;host=$dbHostname;port=$dbPort";
-	my $dbh = DBI->connect($dsn, $dbUsername, $dbPassword) or die("Unable to connect to db: " . $!);
+	# Trying mysql_multi_statements.
+	# Would mysql_server_prepare improve performance?
+	# Also consider processing in "column first" order.  That is: all school data, then all student data, then all contact data.
+	# This permits multivalued inserts if one assumes that this is loading into a clean/empty database.
+	my $dsn = "DBI:mysql:database=$dbName;host=$dbHostname;port=$dbPort;mysql_multi_statements=1";
+	my $dbh = DBI->connect($dsn, $dbUsername, $dbPassword) or die("Unable to connect to db: " . $DBI::errstr);
 	
 
 	# Open input and output files.
@@ -329,6 +383,8 @@ FINI
 			print Dumper($rowData);
 			my %schoolData = map { $_ => $rowData->{$_} } schoolFields;
 			print "School: ", Dumper(\%schoolData);
+			my $schoolID = getSchoolID($dbh, \%schoolData);
+			print "School ID: ", $schoolID, "\n";
 		}
 
 	}
