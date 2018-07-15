@@ -5,6 +5,7 @@ use Data::Dumper;
 use Spreadsheet::Read;
 use Excel::Writer::XLSX;
 use Getopt::Long;
+use DBI;
 
 ######################################################################
 # Provide a mechanism whereby transformations may register themselves, 
@@ -241,11 +242,11 @@ sub processRow($@)
 
 	my $rval = {};
 	my $columnCount = scalar(@row);
-	print "Size of row: ", $columnCount, "\n";
+#	print "Size of row: ", $columnCount, "\n";
 #	print "Headers: ", Dumper($rowHeaders), "\n";
 	if (scalar(@$rowHeaders) < $columnCount) { $columnCount = scalar(@$rowHeaders); }
 
-	print "Copy ", $columnCount, " elements.\n";
+#	print "Copy ", $columnCount, " elements.\n";
 
 	for (my $column = 0; $column < $columnCount; $column++)
 	{
@@ -255,21 +256,42 @@ sub processRow($@)
 	return($rval);
 }
 
+
+use constant schoolFields => ('School', 'School Name');
+
+
+
 sub main()
 {
-	my ($filenameIn);
+	my ($filenameIn, $dbUsername, $dbPassword, $dbName, $dbHostname, $dbPort);
 
 	my $inputErrors = 0;
-	GetOptions('in=s'	=>	\$filenameIn, 
+	GetOptions('in=s'		=>	\$filenameIn, 
+		   'username|u=s'	=>	\$dbUsername,
+		   'password|p=s'	=>	\$dbPassword,
+		   'db|dbname=s'	=>	\$dbName,
+		   'dhhost|host=s'	=>	\$dbHostname,
+		   'dbport|port=s'	=>	\$dbPort,
 	    );
 	if (!$filenameIn) { $inputErrors = 1; }
+	if (!$dbUsername) { $inputErrors = 1; }
+	if (!$dbPassword) { $inputErrors = 1; }
+	if (!$dbName) { $inputErrors = 1; }
+	if (!$dbHostname) { $dbHostname = '127.0.0.1'; }
+	if (!$dbPort) { $dbPort = 3306; }
+
+
 	if ($inputErrors)
 	{
 		print STDERR <<FINI;
-Usage: $0 --in <input xlsx file> 
+Usage: $0 --in <input xlsx file> --username <dbusername> --password <dbpassword> --dbname <dbname> --dbhost <db hostname> --dbport <db port #>
 FINI
 		die("\tCommand line options incorrect\n");
 	}
+
+	my $dsn = "DBI:mysql:database=$dbName;host=$dbHostname;port=$dbPort";
+	my $dbh = DBI->connect($dsn, $dbUsername, $dbPassword) or die("Unable to connect to db: " . $!);
+	
 
 	# Open input and output files.
 	my $staffIn = ReadData($filenameIn, attr => 1) or die("Cannot read input file: $!\n");
@@ -305,6 +327,8 @@ FINI
 			my $rowData = processRow(\@rowHeaders, @rowData);
 #			print join(', ', map { defined($_) ? $_ : '***'; } @rowData), "\n";
 			print Dumper($rowData);
+			my %schoolData = map { $_ => $rowData->{$_} } schoolFields;
+			print "School: ", Dumper(\%schoolData);
 		}
 
 	}
