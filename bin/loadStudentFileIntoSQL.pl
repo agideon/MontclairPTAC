@@ -224,9 +224,9 @@ sub processHeaderRow(@)
 # This is invoked to process each data row.  All transformations
 # for these rows are applied.
 #
-sub processRow(@)
+sub processRow($@)
 {
-	my (@row) = @_;
+	my ($rowHeaders, @row) = @_;
 	my $transforms = getTransformations();
 	if (defined($transforms))
 	{
@@ -238,7 +238,21 @@ sub processRow(@)
 			}
 		}
 	}
-	return(@row);
+
+	my $rval = {};
+	my $columnCount = scalar(@row);
+	print "Size of row: ", $columnCount, "\n";
+#	print "Headers: ", Dumper($rowHeaders), "\n";
+	if (scalar(@$rowHeaders) < $columnCount) { $columnCount = scalar(@$rowHeaders); }
+
+	print "Copy ", $columnCount, " elements.\n";
+
+	for (my $column = 0; $column < $columnCount; $column++)
+	{
+	    $rval->{$rowHeaders->[$column]} = $row[$column];
+	}
+
+	return($rval);
 }
 
 sub main()
@@ -276,19 +290,22 @@ FINI
 	learnColumnHeaders(Spreadsheet::Read::cellrow($page, 1));
 
 	# Loop over rows in sheet
+	my @rowHeaders;
 	for my $row (1..$pageMaxRow) # Note: Row 1 is column headers
 	{
 		my @rowData = Spreadsheet::Read::cellrow($page, $row);
 		if ($row == 1) # Note: Row 1 is column headers:
 		{
-			@rowData = processHeaderRow(@rowData);
+			@rowHeaders = processHeaderRow(@rowData);
+#			print "Headers read: ", Dumper(\@rowHeaders), "\n";
 		}
 		else # Data rows:
 		{
-			@rowData = processRow(@rowData);
+#			print "Headers: ", Dumper(\@rowHeaders), "\n";
+			my $rowData = processRow(\@rowHeaders, @rowData);
+#			print join(', ', map { defined($_) ? $_ : '***'; } @rowData), "\n";
+			print Dumper($rowData);
 		}
-
-		print join(', ', map { defined($_) ? $_ : '***'; } @rowData), "\n";
 
 	}
 
