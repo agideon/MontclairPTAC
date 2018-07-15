@@ -257,9 +257,66 @@ sub processRow($@)
 	return($rval);
 }
 
+sub processSimpleResults($$)
+{
+    my ($statement, $resultWithID) = @_;
+    my $returnedID = undef;
+
+    my $query = $statement->{Statement}; # Just used for error reporting
+    $statement->execute() or die("Unable to execute query " . $query . ": " . $statement->err . ": " . $statement->errstr);
+
+    my $resultSet = 0;
+    do
+    {
+	$resultSet++;
+	my $rowCount = $statement->rows;
+	my $columnCount = $statement->{'NUM_OF_FIELDS'} or 0;
+
+	# It seems that an insert returns a row count of 1 (or perhaps more than that for multivalued inserts)
+	# but a column count of 0 or undef.  So both should be checked (though perhaps only columnCount
+	# is strictly required?).
+	if (($rowCount > 0) && ($columnCount))
+	{
+#	    print "Rows from result set ", $resultSet, "...\n";
+	    while (my @row = $statement->fetchrow_array())
+	    {
+#		print "Row from result set ", $resultSet, ": ", join(', ', @row), "\n";
+		if ($resultSet == $resultWithID) { $returnedID = $row[0];}
+	    }
+	}
+	else
+	{
+#	    print "Skipping retrieval for result set ", $resultSet, ' with row count:', $rowCount, ' and column count: ', $columnCount, "\n";
+	}
+    } while ($statement->more_results);
+    return($returnedID);
+}
+
+
+
+
+
+sub getFamilyCodeID($$)
+{
+    my ($dbh, $familyCode) = @_;
+
+    my $query = <<FINI;
+	insert ignore into family_code(code) values (?);
+
+	select family_code_id from family_code where code = ?;
+FINI
+
+    my $statement = $dbh->prepare($query) or die("Unable to prepare query " . $query . ": " . $dbh->err . ": " . $dbh->errstr);
+
+    $statement->bind_param(1, $familyCode->{'Family Code'}, { TYPE => SQL_VARCHAR }); # Force non-numeric type assumption
+    $statement->bind_param(2, $familyCode->{'Family Code'}, { TYPE => SQL_VARCHAR }); # Force non-numeric type assumption
+
+    return(processSimpleResults($statement, 2));
+}
+
+
 
 use constant schoolFields => ('School', 'School Name');
-
 sub getSchoolID($$)
 {
     my ($dbh, $school) = @_;
@@ -282,36 +339,7 @@ FINI
 
     $statement->bind_param(5, $school->{'School'}, { TYPE => SQL_VARCHAR }); # Force non-numeric type assumption
 
-
-    $statement->execute() or die("Unable to execute query " . $query . ": " . $statement->err . ": " . $statement->errstr);
-    
-    my $schoolID = undef;
-
-    my $resultSet = 0;
-    do
-    {
-	$resultSet++;
-	my $rowCount = $statement->rows;
-	my $columnCount = $statement->{'NUM_OF_FIELDS'} or 0;
-
-	# It seems that an insert returns a row count of 1 (or perhaps more than that for multivalued inserts)
-	# but a column count of 0 or undef.  So both should be checked (though perhaps only columnCount
-	# is strictly required?).
-	if (($rowCount > 0) && ($columnCount))
-	{
-#	    print "Rows from result set ", $resultSet, "...\n";
-	    while (my @row = $statement->fetchrow_array())
-	    {
-#		print "Row from result set ", $resultSet, ": ", join(', ', @row), "\n";
-		if ($resultSet == 3) { $schoolID = $row[0];}
-	    }
-	}
-	else
-	{
-	    print "Skipping retrieval for result set ", $resultSet, ' with row count:', $rowCount, ' and column count: ', $columnCount, "\n";
-	}
-    } while ($statement->more_results);
-    return($schoolID);
+    return(processSimpleResults($statement, 3));
 }
 
 
@@ -389,15 +417,18 @@ FINI
 #			print "Headers: ", Dumper(\@rowHeaders), "\n";
 			my $rowData = processRow(\@rowHeaders, @rowData);
 #			print join(', ', map { defined($_) ? $_ : '***'; } @rowData), "\n";
-#			print Dumper($rowData);
+			print Dumper($rowData);
 			my %schoolData = map { $_ => $rowData->{$_} } schoolFields;
 			print "School: ", Dumper(\%schoolData);
-
+			my %familyCode = map { $_ => $rowData->{$_} } ('Family Code');
+			print "Family Code: ", Dumper(\%familyCode);
 
 			eval
 			{
 			    my $schoolID = getSchoolID($dbh, \%schoolData);
 			    print "School ID: ", $schoolID, "\n";
+			    my $familyCodeID = getFamilyCodeID($dbh, \%familyCode);
+			    print "Family Code ID: ", $familyCodeID, "\n";
 			};
 			if ($@)
 			{
