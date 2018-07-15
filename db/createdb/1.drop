@@ -1,9 +1,9 @@
 \! echo "Drop student_contact"
 drop table if exists student_contact;
-\! echo "Drop homeroom"
-drop table if exists homeroom;
 \! echo "Drop student"
 drop table if exists student;
+\! echo "Drop homeroom"
+drop table if exists homeroom;
 \! echo "Drop family_code"
 drop table if exists family_code;
 \! echo "Drop school_name"
