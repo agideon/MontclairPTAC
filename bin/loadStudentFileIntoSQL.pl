@@ -302,23 +302,43 @@ sub getStudentID($$$$$)
 
     # Note Convertion of date format using str_to_date - assumes a given format in the input
     my $query = <<FINI;
-    insert ignore into student(district_student_id, first_name, last_name, date_of_birth, grade, school_id, homeroom_id, family_code_id)
-	select ?, ?, ?, str_to_date(?,'%m/%d/%Y'), ?, ?, ?, ?;
+    insert into student(district_student_id, first_name, last_name, date_of_birth, grade, school_id, homeroom_id, family_code_id)
+	select ?, ?, ?, str_to_date(?,'%m/%d/%Y'), ?, ?, ?, ?
+	on duplicate key update
+	first_name = ?,
+	last_name = ?,
+	date_of_birth = str_to_date(?,'%m/%d/%Y'),
+	grade = ?,
+	school_id = ?,
+	homeroom_id = ?,
+	family_code_id = ?;
     select student_id from student where district_student_id = ?
 FINI
 
     my $statement = $dbh->prepare($query) or die("Unable to prepare query " . $query . ": " . $dbh->err . ": " . $dbh->errstr);
 
-    $statement->bind_param(1, $student->{'ID'}, { TYPE => SQL_VARCHAR }); # Force non-numeric type assumption
-    $statement->bind_param(2, $student->{'First Name'});
-    $statement->bind_param(3, $student->{'Last Name'});
-    $statement->bind_param(4, $student->{'Date Of Birth'});
-    $statement->bind_param(5, $student->{'Grade'});
-    $statement->bind_param(6, $schoolID);
-    $statement->bind_param(7, $homeroomID);
-    $statement->bind_param(8, $familyCodeID);
+    {
+	my $pindex = 0;
+	$statement->bind_param(++$pindex, $student->{'ID'}, { TYPE => SQL_VARCHAR }); # Force non-numeric type assumption
 
-    $statement->bind_param(9, $student->{'ID'}, { TYPE => SQL_VARCHAR }); # Force non-numeric type assumption
+	$statement->bind_param(++$pindex, $student->{'First Name'});
+	$statement->bind_param(++$pindex, $student->{'Last Name'});
+	$statement->bind_param(++$pindex, $student->{'Date Of Birth'});
+	$statement->bind_param(++$pindex, $student->{'Grade'});
+	$statement->bind_param(++$pindex, $schoolID);
+	$statement->bind_param(++$pindex, $homeroomID);
+	$statement->bind_param(++$pindex, $familyCodeID);
+
+	$statement->bind_param(++$pindex, $student->{'First Name'});
+	$statement->bind_param(++$pindex, $student->{'Last Name'});
+	$statement->bind_param(++$pindex, $student->{'Date Of Birth'});
+	$statement->bind_param(++$pindex, $student->{'Grade'});
+	$statement->bind_param(++$pindex, $schoolID);
+	$statement->bind_param(++$pindex, $homeroomID);
+	$statement->bind_param(++$pindex, $familyCodeID);
+
+	$statement->bind_param(++$pindex, $student->{'ID'}, { TYPE => SQL_VARCHAR }); # Force non-numeric type assumption
+    }
 
     return(processSimpleResults($statement, 2));
 }
