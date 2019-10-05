@@ -89,7 +89,7 @@ create table student
 	first_name	varchar(50) not null,
 	last_name	varchar(50) not null,
 
-	date_of_birth	date not null,
+	date_of_birth	date null,
 
 	school_id	int not null,
 	foreign key (school_id) references school(school_id),
