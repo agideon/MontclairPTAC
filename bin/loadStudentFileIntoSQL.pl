@@ -299,29 +299,32 @@ sub saveContactPhone($$$$$$)
     if (defined($phoneNumber) && ($phoneNumber !~ /^\s*$/))
     {
 	my $query = <<FINI;
-	    insert into phone(number, prime, home, cellular)
-	    	values (?, ?, ?, ?)
+	    insert into phone(number)
+	    	values (?)
 	    on duplicate key
-	    update phone_id = LAST_INSERT_ID(phone_id), 
+	    update phone_id = LAST_INSERT_ID(phone_id);
+	    select last_insert_id();
+	    insert into student_contact_phone(phone_id, student_contact_id, 
+					      prime, home, cellular)
+		values (last_insert_id(), ?, ?, ?, ?)
+	    on duplicate key
+	    update
 		prime = ifnull(?, prime),
 		home = ifnull(?, home),
 		cellular = ifnull(?, cellular);
-	    select last_insert_id();
-	    insert ignore into student_contact_phone(phone_id, student_contact_id)
-		values (last_insert_id(), ?);
 FINI
 
 	my $statement = $dbh->prepare($query) or die("Unable to prepare query " . $query . ": " . $dbh->err . ": " . $dbh->errstr);
 	{
 	    my $pindex = 0;
 	    $statement->bind_param(++$pindex, $phoneNumber);
-	    $statement->bind_param(++$pindex, $isPrimary);
-	    $statement->bind_param(++$pindex, $isHome);
-	    $statement->bind_param(++$pindex, $isCell);
-	    $statement->bind_param(++$pindex, $isPrimary);
-	    $statement->bind_param(++$pindex, $isHome);
-	    $statement->bind_param(++$pindex, $isCell);
 	    $statement->bind_param(++$pindex, $contactID);
+	    $statement->bind_param(++$pindex, $isPrimary);
+	    $statement->bind_param(++$pindex, $isHome);
+	    $statement->bind_param(++$pindex, $isCell);
+	    $statement->bind_param(++$pindex, $isPrimary);
+	    $statement->bind_param(++$pindex, $isHome);
+	    $statement->bind_param(++$pindex, $isCell);
 	}
 	$rval = processSimpleResults($statement, 2);
 	    	
