@@ -113,14 +113,78 @@ create table student_contact
 	first_name	varchar(50) not null,
 	last_name	varchar(50) not null,
 
+	use_in_directory	    boolean null,
+	use_in_broadcast	    boolean null
+);
+
+create table address
+(
+	address_id	INT AUTO_INCREMENT NOT NULL,
+	primary key(address_id),
+
 	street_number	varchar(50) not null,
 	street_name	varchar(50) not null,
 	city		varchar(50) not null,
 	state		varchar(50) not null,
-	zip		varchar(50) not null,
-	email		varchar(50) not null,
-	primary_phone	varchar(50) not null,
-	home_phone	varchar(50) not null,
-	cell_phone	varchar(50) not null,
-	house		varchar(50) not null
+	zip		varchar(50) not null
 );
+
+create table student_contact_address
+(
+	student_contact_id	int not null,
+	foreign key (student_contact_id) references student_contact(student_contact_id),
+
+	address_id  		int not null,
+	foreign key (address_id) references address(address_id)
+);
+
+	
+create table phone
+(
+	phone_id	INT AUTO_INCREMENT NOT NULL,
+	primary key(phone_id),
+
+	
+	number		varchar(50) not null,
+	cellular	boolean null,
+	home		boolean null,
+	house		boolean null
+
+);
+
+create table student_contact_phone
+(
+	student_contact_id	int not null,
+	foreign key (student_contact_id) references student_contact(student_contact_id),
+
+	phone_id  		int not null,
+	foreign key (phone_id) references phone(phone_id)
+);
+
+
+create table email
+(
+	email_id	INT AUTO_INCREMENT NOT NULL,
+	primary key(email_id),
+
+	address		varchar(200) not null,
+	personal	boolean null,
+	work		boolean null
+);
+
+create table student_contact_email
+(
+	student_contact_id	int not null,
+	foreign key (student_contact_id) references student_contact(student_contact_id),
+
+	email_id  		int not null,
+	foreign key (email_id) references email(email_id)
+);
+
+
+
+	
+
+
+
+
