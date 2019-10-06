@@ -112,6 +112,7 @@ create table student_contact
 
 	first_name	varchar(50) not null,
 	last_name	varchar(50) not null,
+	unique key (first_name, last_name), 
 
 	use_in_directory	    boolean null,
 	use_in_broadcast	    boolean null

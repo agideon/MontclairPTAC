@@ -293,6 +293,40 @@ sub processSimpleResults($$)
 }
 
 
+sub getContactID($$$$$$)
+{
+    my ($dbh, $contactInfo, $studentID, $schoolID, $homeroomID, $familyCodeID) = @_;
+    my ($firstName, $lastName) = @$contactInfo;
+    my $query = <<FINI;
+    insert into student_contact(first_name, last_name)
+	values(?, ?)
+	on duplicate key
+    update student_contact_id=LAST_INSERT_ID(student_contact_id);
+    select last_insert_id;
+FINI
+
+    my $statement = $dbh->prepare($query) or die("Unable to prepare query " . $query . ": " . $dbh->err . ": " . $dbh->errstr);
+    $statement->bind_param(1, $firstName);
+    $statement->bind_param(2, $lastName);
+    return(processSimpleResults($statement, 2));
+
+}
+sub getContact1ID($$$$$$)
+{
+    my ($dbh, $student, $studentID, $schoolID, $homeroomID, $familyCodeID) = @_;
+
+    my (@contactInfo) = ($student->{'G1 First Name'}, 
+				  $student->{'G1 Last Name'});
+    return(getContactID($dbh, \@contactInfo, $studentID, $schoolID, $homeroomID, $familyCodeID));
+}
+sub getContact2ID($$$$$$)
+{
+    my ($dbh, $student, $studentID, $schoolID, $homeroomID, $familyCodeID) = @_;
+
+    my (@contactInfo) = ($student->{'G2 First Name'}, 
+				  $student->{'G2 Last Name'});
+    return(getContactID($dbh, \@contactInfo, $studentID, $schoolID, $homeroomID, $familyCodeID));
+}
 
 
 use constant studentFields => ('ID', 'Date Of Birth', 'Last Name', 'First Name', 'Grade');
@@ -347,6 +381,7 @@ FINI
 sub getHomeroomID($$$)
 {
     my ($dbh, $input, $schoolID) = @_;
+    # Note: getContactID() achieves the insert/select more efficiently
     my $query = <<FINI;
     insert ignore into homeroom(room, teacher, school_id) values (?, ?, ?);
     select homeroom_id from homeroom where room = ? AND school_id = ?;
@@ -373,6 +408,7 @@ sub getFamilyCodeID($$)
 {
     my ($dbh, $familyCode) = @_;
 
+    # Note: getContactID() achieves the insert/select more efficiently
     my $query = <<FINI;
 	insert ignore into family_code(code) values (?);
 
@@ -394,6 +430,7 @@ sub getSchoolID($$)
 {
     my ($dbh, $school) = @_;
     # Could also use INSERT INTO ... ON DUPLICATE ...
+    # Note: getContactID() achieves the insert/select more efficiently
     my $query = <<FINI;
 	insert ignore into school(district_school_id, canonical_school_name) values (?, ?);
 
@@ -490,7 +527,7 @@ FINI
 #			print "Headers: ", Dumper(\@rowHeaders), "\n";
 			my $rowData = processRow(\@rowHeaders, @rowData);
 #			print join(', ', map { defined($_) ? $_ : '***'; } @rowData), "\n";
-			print Dumper($rowData);
+			print "Row data:", Dumper($rowData);
 			if (1)
 			{
 			    eval
@@ -502,6 +539,9 @@ FINI
 				my $homeroomID = getHomeroomID($dbh, $rowData, $schoolID);
 				print "Homeroom ID: ", $homeroomID, "\n";
 				my $studentID = getStudentID($dbh, $rowData, $schoolID, $homeroomID, $familyCodeID);
+				my $contact1ID = getContact1ID($dbh, $rowData, $studentID, $schoolID, $homeroomID, $familyCodeID);
+				my $contact2ID = getContact2ID($dbh, $rowData, $studentID, $schoolID, $homeroomID, $familyCodeID);
+
 				print "Student ID: ", $studentID, "\n";
 			    };
 			    if ($@)
