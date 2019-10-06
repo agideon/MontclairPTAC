@@ -182,9 +182,7 @@ create table email
 	email_id	INT AUTO_INCREMENT NOT NULL,
 	primary key(email_id),
 
-	address		varchar(200) not null,
-	personal	boolean null,
-	work		boolean null
+	address		varchar(200) not null
 );
 
 create table student_contact_email
