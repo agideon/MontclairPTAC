@@ -302,12 +302,18 @@ sub getContactID($$$$$$)
 	values(?, ?)
 	on duplicate key
     update student_contact_id=LAST_INSERT_ID(student_contact_id);
-    select last_insert_id;
+    select last_insert_id();
+    insert ignore into student_student_contact(student_contact_id, student_id)
+	values (last_insert_id(), ?);
 FINI
 
     my $statement = $dbh->prepare($query) or die("Unable to prepare query " . $query . ": " . $dbh->err . ": " . $dbh->errstr);
-    $statement->bind_param(1, $firstName);
-    $statement->bind_param(2, $lastName);
+    {
+	my $pindex = 0;
+	$statement->bind_param(++$pindex, $firstName);
+	$statement->bind_param(++$pindex, $lastName);
+	$statement->bind_param(++$pindex, $studentID);
+    }
     return(processSimpleResults($statement, 2));
 
 }
@@ -542,7 +548,9 @@ FINI
 				my $contact1ID = getContact1ID($dbh, $rowData, $studentID, $schoolID, $homeroomID, $familyCodeID);
 				my $contact2ID = getContact2ID($dbh, $rowData, $studentID, $schoolID, $homeroomID, $familyCodeID);
 
-				print "Student ID: ", $studentID, "\n";
+				print 'Student ID: ', $studentID, 
+					' Contact IDs: ', $contact1ID, ' and ', $contact2ID, 
+					"\n";
 			    };
 			    if ($@)
 			    {

@@ -14,6 +14,9 @@ drop table if exists student_contact_phone;
 \! echo "Drop phone"
 drop table if exists phone;
 
+\! echo "Drop student_student_contact"
+drop table if exists student_student_contact;
+
 \! echo "Drop student_contact"
 drop table if exists student_contact;
 

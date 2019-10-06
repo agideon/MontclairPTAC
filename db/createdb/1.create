@@ -118,6 +118,20 @@ create table student_contact
 	use_in_broadcast	    boolean null
 );
 
+create table student_student_contact
+(
+	student_contact_id	int not null references student_contact(student_contact_id), 
+	student_id		int not null references student(student_id),
+
+	unique key (student_contact_id, student_id), 
+
+	-- Support quick joining in either direction
+	key (student_contact_id), 
+	key (student_id)
+);
+
+
+
 create table address
 (
 	address_id	INT AUTO_INCREMENT NOT NULL,
