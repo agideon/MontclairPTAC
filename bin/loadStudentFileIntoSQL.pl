@@ -332,15 +332,22 @@ sub getContact2EmailID($$$$$$$)
 }
 
 
-sub getContactID($$$$$$)
+sub getContactID($$$$$$$)
 {
-    my ($dbh, $contactInfo, $studentID, $schoolID, $homeroomID, $familyCodeID) = @_;
+    my ($dbh, $contactInfo, $student, $studentID, $schoolID, $homeroomID, $familyCodeID) = @_;
     my ($firstName, $lastName) = @$contactInfo;
+    my ($useForEmailBcast, $useForDirectory) = 
+	($student->{'useForEmailBcast'}, 
+	 $student->{'useForDirectory'});
+
     my $query = <<FINI;
-    insert into student_contact(first_name, last_name)
-	values(?, ?)
+    insert into student_contact(first_name, last_name, use_in_broadcast, use_in_directory)
+	values(?, ?, ?, ?)
 	on duplicate key
-    update student_contact_id=LAST_INSERT_ID(student_contact_id);
+    update 
+	student_contact_id=LAST_INSERT_ID(student_contact_id), 
+	use_in_broadcast = ifnull(?, use_in_broadcast), 
+	use_in_directory = ifnull(?, use_in_directory);
     select last_insert_id();
     insert ignore into student_student_contact(student_contact_id, student_id)
 	values (last_insert_id(), ?);
@@ -351,6 +358,10 @@ FINI
 	my $pindex = 0;
 	$statement->bind_param(++$pindex, $firstName);
 	$statement->bind_param(++$pindex, $lastName);
+	$statement->bind_param(++$pindex, $useForEmailBcast);
+	$statement->bind_param(++$pindex, $useForDirectory);
+	$statement->bind_param(++$pindex, $useForEmailBcast);
+	$statement->bind_param(++$pindex, $useForDirectory);
 	$statement->bind_param(++$pindex, $studentID);
     }
     return(processSimpleResults($statement, 2));
@@ -364,7 +375,7 @@ sub getContact1ID($$$$$$)
 
     my (@contactInfo) = ($student->{'G1 First Name'}, 
 				  $student->{'G1 Last Name'});
-    return(getContactID($dbh, \@contactInfo, $studentID, $schoolID, $homeroomID, $familyCodeID));
+    return(getContactID($dbh, \@contactInfo, $student, $studentID, $schoolID, $homeroomID, $familyCodeID));
 }
 sub getContact2ID($$$$$$)
 {
@@ -372,7 +383,7 @@ sub getContact2ID($$$$$$)
 
     my (@contactInfo) = ($student->{'G2 First Name'}, 
 				  $student->{'G2 Last Name'});
-    return(getContactID($dbh, \@contactInfo, $studentID, $schoolID, $homeroomID, $familyCodeID));
+    return(getContactID($dbh, \@contactInfo, $student, $studentID, $schoolID, $homeroomID, $familyCodeID));
 }
 
 
@@ -504,6 +515,7 @@ FINI
 sub main()
 {
 	my ($filenameIn, $dbUsername, $dbPassword, $dbName, $dbHostname, $dbPort);
+	my ($useForEmailBcast, $useForDirectory); # deliberately left undefined for NULLness
 
 	my $inputErrors = 0;
 	GetOptions('in=s'		=>	\$filenameIn, 
@@ -512,6 +524,8 @@ sub main()
 		   'db|dbname=s'	=>	\$dbName,
 		   'dhhost|host=s'	=>	\$dbHostname,
 		   'dbport|port=s'	=>	\$dbPort,
+		   'email'		=>	\$useForEmailBcast,
+		   'directory'		=>	\$useForDirectory,
 	    );
 	if (!$filenameIn) { $inputErrors = 1; }
 	if (!$dbUsername) { $inputErrors = 1; }
@@ -574,6 +588,10 @@ FINI
 #			print "Headers: ", Dumper(\@rowHeaders), "\n";
 			my $rowData = processRow(\@rowHeaders, @rowData);
 #			print join(', ', map { defined($_) ? $_ : '***'; } @rowData), "\n";
+
+			# Add "use" flags
+			$rowData->{'useForEmailBcast'} = $useForEmailBcast;
+			$rowData->{'useForDirectory'} = $useForDirectory;
 			print "Row data:", Dumper($rowData);
 			if (1)
 			{
