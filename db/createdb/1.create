@@ -150,7 +150,9 @@ create table student_contact_address
 	foreign key (student_contact_id) references student_contact(student_contact_id),
 
 	address_id  		int not null,
-	foreign key (address_id) references address(address_id)
+	foreign key (address_id) references address(address_id),
+
+	unique key (student_contact_id, address_id)
 );
 
 	
@@ -160,10 +162,10 @@ create table phone
 	primary key(phone_id),
 
 	
-	number		varchar(50) not null,
+	number		varchar(50) not null unique,
 	cellular	boolean null,
 	home		boolean null,
-	house		boolean null
+	prime		boolean null
 
 );
 
@@ -173,7 +175,9 @@ create table student_contact_phone
 	foreign key (student_contact_id) references student_contact(student_contact_id),
 
 	phone_id  		int not null,
-	foreign key (phone_id) references phone(phone_id)
+	foreign key (phone_id) references phone(phone_id),
+
+	unique key (student_contact_id, phone_id)
 );
 
 
@@ -192,8 +196,8 @@ create table student_contact_email
 
 	email_id  		int not null,
 	foreign key (email_id) references email(email_id), 
-	unique key (student_contact_id, email_id)
 
+	unique key (student_contact_id, email_id)
 );
 
 

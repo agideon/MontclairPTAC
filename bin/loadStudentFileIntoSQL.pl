@@ -292,6 +292,78 @@ sub processSimpleResults($$)
     return($returnedID);
 }
 
+sub saveContactPhone($$$$$$)
+{
+    my ($dbh, $phoneNumber, $isPrimary, $isHome, $isCell, $contactID) = @_;
+    my $rval;
+    if (defined($phoneNumber) && ($phoneNumber !~ /^\s*$/))
+    {
+	my $query = <<FINI;
+	    insert into phone(number, prime, home, cellular)
+	    	values (?, ?, ?, ?)
+	    on duplicate key
+	    update phone_id = LAST_INSERT_ID(phone_id), 
+		prime = ifnull(?, prime),
+		home = ifnull(?, home),
+		cellular = ifnull(?, cellular);
+	    select last_insert_id();
+	    insert ignore into student_contact_phone(phone_id, student_contact_id)
+		values (last_insert_id(), ?);
+FINI
+
+	my $statement = $dbh->prepare($query) or die("Unable to prepare query " . $query . ": " . $dbh->err . ": " . $dbh->errstr);
+	{
+	    my $pindex = 0;
+	    $statement->bind_param(++$pindex, $phoneNumber);
+	    $statement->bind_param(++$pindex, $isPrimary);
+	    $statement->bind_param(++$pindex, $isHome);
+	    $statement->bind_param(++$pindex, $isCell);
+	    $statement->bind_param(++$pindex, $isPrimary);
+	    $statement->bind_param(++$pindex, $isHome);
+	    $statement->bind_param(++$pindex, $isCell);
+	    $statement->bind_param(++$pindex, $contactID);
+	}
+	$rval = processSimpleResults($statement, 2);
+	    	
+    }
+    return($rval);
+}
+sub saveContactPhones($$$$$$$)
+{
+    my ($dbh, $phoneNumbers, $contactID, $studentID, $schoolID, $homeroomID, $familyCodeID) = @_;
+    my ($primaryPhone, $homePhone, $cellPhone) = @$phoneNumbers;
+
+    my $r1 = saveContactPhone($dbh, $primaryPhone, 1, undef, undef, $contactID);
+    my $r2 = saveContactPhone($dbh, $homePhone, undef, 1, undef, $contactID);
+    my $r3 = saveContactPhone($dbh, $cellPhone, undef, undef, 1, $contactID);
+    return($r1, $r2, $r3);
+}
+
+sub saveContact1Phones($$$$$$$)
+{
+    my ($dbh, $student, $contactID, $studentID, $schoolID, $homeroomID, $familyCodeID) = @_;
+    my @phoneNumbers = ($student->{'G1 Primary Phone'}, 
+			$student->{'G1 Home Phone'},
+			$student->{'G1 Cell Phone'}
+	);
+    return(saveContactPhones($dbh, \@phoneNumbers, $contactID, $studentID, $schoolID, $homeroomID, $familyCodeID));
+    
+}
+
+sub saveContact2Phones($$$$$$$)
+{
+    my ($dbh, $student, $contactID, $studentID, $schoolID, $homeroomID, $familyCodeID) = @_;
+    my @phoneNumbers = ($student->{'G2 Primary Phone'}, 
+			$student->{'G2 Home Phone'},
+			$student->{'G2 Cell Phone'}
+	);
+    return(saveContactPhones($dbh, \@phoneNumbers, $contactID, $studentID, $schoolID, $homeroomID, $familyCodeID));
+
+    
+}
+
+
+
 sub getContactEmailID($$$$$$$)
 {
     my ($dbh, $emailAddress, $contactID, $studentID, $schoolID, $homeroomID, $familyCodeID) = @_;
@@ -609,6 +681,12 @@ FINI
 
 				my $email1ID = getContact1EmailID($dbh, $rowData, $contact1ID, $studentID, $schoolID, $homeroomID, $familyCodeID);
 				my $email2ID = getContact2EmailID($dbh, $rowData, $contact2ID, $studentID, $schoolID, $homeroomID, $familyCodeID);
+
+				saveContact1Phones($dbh, $rowData, $contact1ID, $studentID, $schoolID, $homeroomID, $familyCodeID);
+				saveContact2Phones($dbh, $rowData, $contact2ID, $studentID, $schoolID, $homeroomID, $familyCodeID);
+
+
+
 				print 'Student ID: ', $studentID, 
 					' Contact IDs: ', $contact1ID, ' and ', $contact2ID, 
 					"\n";
