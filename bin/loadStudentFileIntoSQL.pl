@@ -292,6 +292,45 @@ sub processSimpleResults($$)
     return($returnedID);
 }
 
+sub getContactEmailID($$$$$$$)
+{
+    my ($dbh, $emailAddress, $contactID, $studentID, $schoolID, $homeroomID, $familyCodeID) = @_;
+    my $query = <<FINI;
+    insert into email(address)
+	values(?)
+	on duplicate key
+    update email_id=LAST_INSERT_ID(email_id);
+    select last_insert_id();
+    insert ignore into student_contact_email(email_id, student_contact_id)
+	values (last_insert_id(), ?);
+FINI
+
+    my $statement = $dbh->prepare($query) or die("Unable to prepare query " . $query . ": " . $dbh->err . ": " . $dbh->errstr);
+    {
+	my $pindex = 0;
+	$statement->bind_param(++$pindex, $emailAddress);
+	$statement->bind_param(++$pindex, $contactID);
+    }
+    return(processSimpleResults($statement, 2));
+    
+}
+
+sub getContact1EmailID($$$$$$$)
+{
+    my ($dbh, $student, $contact1ID, $studentID, $schoolID, $homeroomID, $familyCodeID) = @_;
+    my $emailAddress = $student->{'G1 Email'};
+    return(getContactEmailID($dbh, $emailAddress, $contact1ID, $studentID, $schoolID, $homeroomID, $familyCodeID));
+    
+}
+
+sub getContact2EmailID($$$$$$$)
+{
+    my ($dbh, $student, $contact1ID, $studentID, $schoolID, $homeroomID, $familyCodeID) = @_;
+    my $emailAddress = $student->{'G2 Email'};
+    return(getContactEmailID($dbh, $emailAddress, $contact1ID, $studentID, $schoolID, $homeroomID, $familyCodeID));
+    
+}
+
 
 sub getContactID($$$$$$)
 {
@@ -317,6 +356,8 @@ FINI
     return(processSimpleResults($statement, 2));
 
 }
+
+
 sub getContact1ID($$$$$$)
 {
     my ($dbh, $student, $studentID, $schoolID, $homeroomID, $familyCodeID) = @_;
@@ -548,6 +589,8 @@ FINI
 				my $contact1ID = getContact1ID($dbh, $rowData, $studentID, $schoolID, $homeroomID, $familyCodeID);
 				my $contact2ID = getContact2ID($dbh, $rowData, $studentID, $schoolID, $homeroomID, $familyCodeID);
 
+				my $email1ID = getContact1EmailID($dbh, $rowData, $contact1ID, $studentID, $schoolID, $homeroomID, $familyCodeID);
+				my $email2ID = getContact2EmailID($dbh, $rowData, $contact2ID, $studentID, $schoolID, $homeroomID, $familyCodeID);
 				print 'Student ID: ', $studentID, 
 					' Contact IDs: ', $contact1ID, ' and ', $contact2ID, 
 					"\n";

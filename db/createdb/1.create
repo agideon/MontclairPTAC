@@ -182,7 +182,7 @@ create table email
 	email_id	INT AUTO_INCREMENT NOT NULL,
 	primary key(email_id),
 
-	address		varchar(200) not null
+	address		varchar(200) not null unique
 );
 
 create table student_contact_email
@@ -191,7 +191,9 @@ create table student_contact_email
 	foreign key (student_contact_id) references student_contact(student_contact_id),
 
 	email_id  		int not null,
-	foreign key (email_id) references email(email_id)
+	foreign key (email_id) references email(email_id), 
+	unique key (student_contact_id, email_id)
+
 );
 
 
