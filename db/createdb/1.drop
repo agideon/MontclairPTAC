@@ -1,5 +1,26 @@
+
+\! echo "Drop student_contact_address"
+drop table if exists student_contact_address;
+\! echo "Drop address"
+drop table if exists address;
+
+\! echo "Drop student_contact_email"
+drop table if exists student_contact_email;
+\! echo "Drop email"
+drop table if exists email;
+
+\! echo "Drop student_contact_phone"
+drop table if exists student_contact_phone;
+\! echo "Drop phone"
+drop table if exists phone;
+
+\! echo "Drop student_student_contact"
+drop table if exists student_student_contact;
+
 \! echo "Drop student_contact"
 drop table if exists student_contact;
+
+
 \! echo "Drop student"
 drop table if exists student;
 \! echo "Drop homeroom"

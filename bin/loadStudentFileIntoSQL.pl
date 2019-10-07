@@ -292,7 +292,174 @@ sub processSimpleResults($$)
     return($returnedID);
 }
 
+sub saveContactPhone($$$$$$)
+{
+    my ($dbh, $phoneNumber, $isPrimary, $isHome, $isCell, $contactID) = @_;
+    my $rval;
+    if (defined($phoneNumber) && ($phoneNumber !~ /^\s*$/))
+    {
+	my $query = <<FINI;
+	    insert into phone(number)
+	    	values (?)
+	    on duplicate key
+	    update phone_id = LAST_INSERT_ID(phone_id);
+	    select last_insert_id();
+	    insert into student_contact_phone(phone_id, student_contact_id, 
+					      prime, home, cellular)
+		values (last_insert_id(), ?, ?, ?, ?)
+	    on duplicate key
+	    update
+		prime = ifnull(?, prime),
+		home = ifnull(?, home),
+		cellular = ifnull(?, cellular);
+FINI
 
+	my $statement = $dbh->prepare($query) or die("Unable to prepare query " . $query . ": " . $dbh->err . ": " . $dbh->errstr);
+	{
+	    my $pindex = 0;
+	    $statement->bind_param(++$pindex, $phoneNumber);
+	    $statement->bind_param(++$pindex, $contactID);
+	    $statement->bind_param(++$pindex, $isPrimary);
+	    $statement->bind_param(++$pindex, $isHome);
+	    $statement->bind_param(++$pindex, $isCell);
+	    $statement->bind_param(++$pindex, $isPrimary);
+	    $statement->bind_param(++$pindex, $isHome);
+	    $statement->bind_param(++$pindex, $isCell);
+	}
+	$rval = processSimpleResults($statement, 2);
+	    	
+    }
+    return($rval);
+}
+sub saveContactPhones($$$$$$$)
+{
+    my ($dbh, $phoneNumbers, $contactID, $studentID, $schoolID, $homeroomID, $familyCodeID) = @_;
+    my ($primaryPhone, $homePhone, $cellPhone) = @$phoneNumbers;
+
+    my $r1 = saveContactPhone($dbh, $primaryPhone, 1, undef, undef, $contactID);
+    my $r2 = saveContactPhone($dbh, $homePhone, undef, 1, undef, $contactID);
+    my $r3 = saveContactPhone($dbh, $cellPhone, undef, undef, 1, $contactID);
+    return($r1, $r2, $r3);
+}
+
+sub saveContact1Phones($$$$$$$)
+{
+    my ($dbh, $student, $contactID, $studentID, $schoolID, $homeroomID, $familyCodeID) = @_;
+    my @phoneNumbers = ($student->{'G1 Primary Phone'}, 
+			$student->{'G1 Home Phone'},
+			$student->{'G1 Cell Phone'}
+	);
+    return(saveContactPhones($dbh, \@phoneNumbers, $contactID, $studentID, $schoolID, $homeroomID, $familyCodeID));
+    
+}
+
+sub saveContact2Phones($$$$$$$)
+{
+    my ($dbh, $student, $contactID, $studentID, $schoolID, $homeroomID, $familyCodeID) = @_;
+    my @phoneNumbers = ($student->{'G2 Primary Phone'}, 
+			$student->{'G2 Home Phone'},
+			$student->{'G2 Cell Phone'}
+	);
+    return(saveContactPhones($dbh, \@phoneNumbers, $contactID, $studentID, $schoolID, $homeroomID, $familyCodeID));
+
+    
+}
+
+
+
+sub getContactEmailID($$$$$$$)
+{
+    my ($dbh, $emailAddress, $contactID, $studentID, $schoolID, $homeroomID, $familyCodeID) = @_;
+    my $query = <<FINI;
+    insert into email(address)
+	values(?)
+	on duplicate key
+    update email_id=LAST_INSERT_ID(email_id);
+    select last_insert_id();
+    insert ignore into student_contact_email(email_id, student_contact_id)
+	values (last_insert_id(), ?);
+FINI
+
+    my $statement = $dbh->prepare($query) or die("Unable to prepare query " . $query . ": " . $dbh->err . ": " . $dbh->errstr);
+    {
+	my $pindex = 0;
+	$statement->bind_param(++$pindex, $emailAddress);
+	$statement->bind_param(++$pindex, $contactID);
+    }
+    return(processSimpleResults($statement, 2));
+    
+}
+
+sub getContact1EmailID($$$$$$$)
+{
+    my ($dbh, $student, $contact1ID, $studentID, $schoolID, $homeroomID, $familyCodeID) = @_;
+    my $emailAddress = $student->{'G1 Email'};
+    return(getContactEmailID($dbh, $emailAddress, $contact1ID, $studentID, $schoolID, $homeroomID, $familyCodeID));
+    
+}
+
+sub getContact2EmailID($$$$$$$)
+{
+    my ($dbh, $student, $contact1ID, $studentID, $schoolID, $homeroomID, $familyCodeID) = @_;
+    my $emailAddress = $student->{'G2 Email'};
+    return(getContactEmailID($dbh, $emailAddress, $contact1ID, $studentID, $schoolID, $homeroomID, $familyCodeID));
+    
+}
+
+
+sub getContactID($$$$$$$)
+{
+    my ($dbh, $contactInfo, $student, $studentID, $schoolID, $homeroomID, $familyCodeID) = @_;
+    my ($firstName, $lastName) = @$contactInfo;
+    my ($useForEmailBcast, $useForDirectory) = 
+	($student->{'useForEmailBcast'}, 
+	 $student->{'useForDirectory'});
+
+    my $query = <<FINI;
+    insert into student_contact(first_name, last_name, use_in_broadcast, use_in_directory)
+	values(?, ?, ?, ?)
+	on duplicate key
+    update 
+	student_contact_id=LAST_INSERT_ID(student_contact_id), 
+	use_in_broadcast = ifnull(?, use_in_broadcast), 
+	use_in_directory = ifnull(?, use_in_directory);
+    select last_insert_id();
+    insert ignore into student_student_contact(student_contact_id, student_id)
+	values (last_insert_id(), ?);
+FINI
+
+    my $statement = $dbh->prepare($query) or die("Unable to prepare query " . $query . ": " . $dbh->err . ": " . $dbh->errstr);
+    {
+	my $pindex = 0;
+	$statement->bind_param(++$pindex, $firstName);
+	$statement->bind_param(++$pindex, $lastName);
+	$statement->bind_param(++$pindex, $useForEmailBcast);
+	$statement->bind_param(++$pindex, $useForDirectory);
+	$statement->bind_param(++$pindex, $useForEmailBcast);
+	$statement->bind_param(++$pindex, $useForDirectory);
+	$statement->bind_param(++$pindex, $studentID);
+    }
+    return(processSimpleResults($statement, 2));
+
+}
+
+
+sub getContact1ID($$$$$$)
+{
+    my ($dbh, $student, $studentID, $schoolID, $homeroomID, $familyCodeID) = @_;
+
+    my (@contactInfo) = ($student->{'G1 First Name'}, 
+				  $student->{'G1 Last Name'});
+    return(getContactID($dbh, \@contactInfo, $student, $studentID, $schoolID, $homeroomID, $familyCodeID));
+}
+sub getContact2ID($$$$$$)
+{
+    my ($dbh, $student, $studentID, $schoolID, $homeroomID, $familyCodeID) = @_;
+
+    my (@contactInfo) = ($student->{'G2 First Name'}, 
+				  $student->{'G2 Last Name'});
+    return(getContactID($dbh, \@contactInfo, $student, $studentID, $schoolID, $homeroomID, $familyCodeID));
+}
 
 
 use constant studentFields => ('ID', 'Date Of Birth', 'Last Name', 'First Name', 'Grade');
@@ -347,6 +514,7 @@ FINI
 sub getHomeroomID($$$)
 {
     my ($dbh, $input, $schoolID) = @_;
+    # Note: getContactID() achieves the insert/select more efficiently
     my $query = <<FINI;
     insert ignore into homeroom(room, teacher, school_id) values (?, ?, ?);
     select homeroom_id from homeroom where room = ? AND school_id = ?;
@@ -373,6 +541,7 @@ sub getFamilyCodeID($$)
 {
     my ($dbh, $familyCode) = @_;
 
+    # Note: getContactID() achieves the insert/select more efficiently
     my $query = <<FINI;
 	insert ignore into family_code(code) values (?);
 
@@ -394,6 +563,7 @@ sub getSchoolID($$)
 {
     my ($dbh, $school) = @_;
     # Could also use INSERT INTO ... ON DUPLICATE ...
+    # Note: getContactID() achieves the insert/select more efficiently
     my $query = <<FINI;
 	insert ignore into school(district_school_id, canonical_school_name) values (?, ?);
 
@@ -420,6 +590,7 @@ FINI
 sub main()
 {
 	my ($filenameIn, $dbUsername, $dbPassword, $dbName, $dbHostname, $dbPort);
+	my ($useForEmailBcast, $useForDirectory); # deliberately left undefined for NULLness
 
 	my $inputErrors = 0;
 	GetOptions('in=s'		=>	\$filenameIn, 
@@ -428,6 +599,8 @@ sub main()
 		   'db|dbname=s'	=>	\$dbName,
 		   'dhhost|host=s'	=>	\$dbHostname,
 		   'dbport|port=s'	=>	\$dbPort,
+		   'email'		=>	\$useForEmailBcast,
+		   'directory'		=>	\$useForDirectory,
 	    );
 	if (!$filenameIn) { $inputErrors = 1; }
 	if (!$dbUsername) { $inputErrors = 1; }
@@ -490,7 +663,11 @@ FINI
 #			print "Headers: ", Dumper(\@rowHeaders), "\n";
 			my $rowData = processRow(\@rowHeaders, @rowData);
 #			print join(', ', map { defined($_) ? $_ : '***'; } @rowData), "\n";
-			print Dumper($rowData);
+
+			# Add "use" flags
+			$rowData->{'useForEmailBcast'} = $useForEmailBcast;
+			$rowData->{'useForDirectory'} = $useForDirectory;
+			print "Row data:", Dumper($rowData);
 			if (1)
 			{
 			    eval
@@ -502,7 +679,20 @@ FINI
 				my $homeroomID = getHomeroomID($dbh, $rowData, $schoolID);
 				print "Homeroom ID: ", $homeroomID, "\n";
 				my $studentID = getStudentID($dbh, $rowData, $schoolID, $homeroomID, $familyCodeID);
-				print "Student ID: ", $studentID, "\n";
+				my $contact1ID = getContact1ID($dbh, $rowData, $studentID, $schoolID, $homeroomID, $familyCodeID);
+				my $contact2ID = getContact2ID($dbh, $rowData, $studentID, $schoolID, $homeroomID, $familyCodeID);
+
+				my $email1ID = getContact1EmailID($dbh, $rowData, $contact1ID, $studentID, $schoolID, $homeroomID, $familyCodeID);
+				my $email2ID = getContact2EmailID($dbh, $rowData, $contact2ID, $studentID, $schoolID, $homeroomID, $familyCodeID);
+
+				saveContact1Phones($dbh, $rowData, $contact1ID, $studentID, $schoolID, $homeroomID, $familyCodeID);
+				saveContact2Phones($dbh, $rowData, $contact2ID, $studentID, $schoolID, $homeroomID, $familyCodeID);
+
+
+
+				print 'Student ID: ', $studentID, 
+					' Contact IDs: ', $contact1ID, ' and ', $contact2ID, 
+					"\n";
 			    };
 			    if ($@)
 			    {
