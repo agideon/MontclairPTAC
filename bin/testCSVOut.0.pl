@@ -122,13 +122,16 @@ FINI
 
 		# Column Headers
 		my $columnNames = $statement->{NAME};
-		$pageout->write_row($sheetRowIndex++, 0, $columnNames);
+		my $headerFormat = $sheetout->add_format('align' => 'center', 'bold' => 1);
+		$pageout->write_row($sheetRowIndex++, 0, $columnNames, $headerFormat);
 
 		# Data Rows
+		my $dataFormat = $sheetout->add_format('align' => 'left', 'bold' => 0);
 		while (my @row = $statement->fetchrow_array())
 		{
 		    $pageout->write_row($sheetRowIndex++, 0, 
-					\@row);
+					\@row, $dataFormat);
+
 		}
 	    }
 	    else
@@ -137,6 +140,9 @@ FINI
 	    }
 	} while ($statement->more_results);
     }
+
+    $pageout->set_column(0, 0, 30);
+    $pageout->set_column(1, 2, 20);
 
     $dbh->commit;
 }
