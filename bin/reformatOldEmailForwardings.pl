@@ -33,8 +33,8 @@ sub acceptInputForwardings()
 		# aren't any.
 		my $destinations = [map { $_ =~ s/^\s*"(.*)"\s*$/$1/; $_; } split(/\s*,\s*/, $destinationList)];
 		$oldForwardings->{$address} = $destinations;
-		print "Adding forwarding for $address\n";
-		print "\t", join("\n\t", @{$oldForwardings->{$address}}), "\n";
+#		print "Adding forwarding for $address\n";
+#		print "\t", join("\n\t", @{$oldForwardings->{$address}}), "\n";
 	    }
 	}
     }
