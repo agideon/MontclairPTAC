@@ -31,15 +31,27 @@ sub acceptInputForwardings()
 	    {
 		# Note: This would break if there were forwarding pipes with commas.  Fortunately, there
 		# aren't any.
-		my $destinations = [map { $_ =~ s/^\s*"(.*)"\s*$/$1/; $_; } split(/\s*,\s*/, $destinationList)];
-		$oldForwardings->{$address} = $destinations;
+		my $destinations = [
+		    grep { $_ !~ /^\s*:\s*(fail|blackhole)/; }	# Eliminate "fail" etc. actions
+		    grep { $_ !~ /^\s*\|/; }			# Eliminate pipes
+		    map { $_ =~ s/^\s*"(.*)"\s*$/$1/; $_; }	# Remove surrounding quotes
+		    split(/\s*,\s*/, $destinationList)
+		    ];
+
+		if (scalar(@{$destinations}) > 0)
+		{
+		    $oldForwardings->{$address} = $destinations;
+		}
 #		print "Adding forwarding for $address\n";
 #		print "\t", join("\n\t", @{$oldForwardings->{$address}}), "\n";
 	    }
 	}
     }
     print "Result: ", Dumper($oldForwardings);
+    return($oldForwardings);
 }
+
+
 
 
 acceptInputForwardings();
