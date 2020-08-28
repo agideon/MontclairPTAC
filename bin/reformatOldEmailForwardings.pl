@@ -115,7 +115,7 @@ sub detectTooLargeList($$)
 sub main()
 {
     my $oldForwardings = acceptInputForwardings();
-    $oldForwardings = detectTooLargeList($oldForwardings, 3);
+    $oldForwardings = detectTooLargeList($oldForwardings, 10);
 
     print "Result: ", Dumper($oldForwardings);
 }
