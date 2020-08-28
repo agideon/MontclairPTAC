@@ -86,11 +86,11 @@ sub detectTooLargeList($$)
 	    if (scalar(@{$destinations}) > $limit)
 	    {
 
-		print "$alias destination list too large\n";
+#		print "$alias destination list too large\n";
 		my $midPoint = scalar(@{$destinations}) / 2;
 		my @left = @{$destinations}[0..$midPoint-1];
 		my @right = @{$destinations}[$midPoint..scalar(@{$destinations})-1];
-		print "Splitting ", join(', ', @{$destinations}), " into\n\t", join(', ', @left), "\n\t", join(', ', @right), "\n";
+#		print "Splitting ", join(', ', @{$destinations}), " into\n\t", join(', ', @left), "\n\t", join(', ', @right), "\n";
 
 		if ($alias =~ /^\s*([^@]+)@(.*)$/)
 		{
@@ -115,9 +115,21 @@ sub detectTooLargeList($$)
 sub main()
 {
     my $oldForwardings = acceptInputForwardings();
-    $oldForwardings = detectTooLargeList($oldForwardings, 10);
+    my $newForwardings = detectTooLargeList($oldForwardings, 10);
 
-    print "Result: ", Dumper($oldForwardings);
+#    print "Result: ", Dumper($newForwardings);
+    for my $alias (sort(keys(%{$newForwardings})))
+    {
+	for my $destination (sort(@{$newForwardings->{$alias}}))
+	{
+	    print $alias, ',', $destination, "\n";
+	}
+    }
+
+#    while (my ($alias, $destinationList) = each(%{$newForwardings}))
+#    {
+#	print $alias, join(', ', @$destinationList), "\n";
+#    }
 }
 
 main();
