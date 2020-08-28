@@ -50,6 +50,12 @@ sub acceptInputForwardings()
     return($oldForwardings);
 }
 
+######################################################################
+# This searches the alias data for destination lists that are too large as 
+# per https://support.google.com/a/answer/4524505?hl=en claiming "You can 
+# map an individual recipient address to a maximum of 12 addresses."  Lists
+# that are too large are decomposed.
+#
 sub detectTooLargeList($$)
 {
     my ($oldForwardings, $limit) = @_;
@@ -58,6 +64,14 @@ sub detectTooLargeList($$)
 	$limit = 10;
     }
 
+    # Use this to control repetitions.  We're going to pass through our data set
+    # repeatedly, looking for lists of destinations that are too large.  If one or
+    # more "too large" sets are found, they'll be decomposed.  And then the process
+    # is repeated.  It repeats until no set is found that is too large.
+    #
+    # This could also have been handled recursively, but this seemed more clear.
+    # $modified is set to true if a "too large" set is found and the alias data
+    # is modified as a result.  That triggers a repetition.
     my $modified;
 
     do
@@ -75,12 +89,13 @@ sub detectTooLargeList($$)
 		print "$alias destination list too large\n";
 		my $midPoint = scalar(@{$destinations}) / 2;
 		my @left = @{$destinations}[0..$midPoint-1];
-#	    my @right = @{$destinations}[$midPoint..$#@{$destinations}];
 		my @right = @{$destinations}[$midPoint..scalar(@{$destinations})-1];
 		print "Splitting ", join(', ', @{$destinations}), " into\n\t", join(', ', @left), "\n\t", join(', ', @right), "\n";
 
 		if ($alias =~ /^\s*([^@]+)@(.*)$/)
 		{
+		    # Split the "too large" list in half.  This could have been thirds or quarters or ... but half
+		    # seems sufficient and 2 is such a magic number in computing I felt it deserved the use.
 		    my ($userpart, $hostname) = ($1, $2);
 		    my ($leftaddr, $rightaddr) = ($userpart . '-left@' . $hostname, $userpart . '-right@' . $hostname);
 		    $oldForwardings->{$alias} = [$leftaddr, $rightaddr];
