@@ -47,11 +47,63 @@ sub acceptInputForwardings()
 	    }
 	}
     }
-    print "Result: ", Dumper($oldForwardings);
+    return($oldForwardings);
+}
+
+sub detectTooLargeList($$)
+{
+    my ($oldForwardings, $limit) = @_;
+    if (!defined($limit))
+    {
+	$limit = 10;
+    }
+
+    my $modified;
+
+    do
+    {
+	$modified = 0; # assume no changes (yet);
+
+	# Not using each() because the aarray may be modified
+	my @aliases = keys(%{$oldForwardings});
+	foreach my $alias (@aliases)
+	{
+	    my $destinations = $oldForwardings->{$alias};
+	    if (scalar(@{$destinations}) > $limit)
+	    {
+
+		print "$alias destination list too large\n";
+		my $midPoint = scalar(@{$destinations}) / 2;
+		my @left = @{$destinations}[0..$midPoint-1];
+#	    my @right = @{$destinations}[$midPoint..$#@{$destinations}];
+		my @right = @{$destinations}[$midPoint..scalar(@{$destinations})-1];
+		print "Splitting ", join(', ', @{$destinations}), " into\n\t", join(', ', @left), "\n\t", join(', ', @right), "\n";
+
+		if ($alias =~ /^\s*([^@]+)@(.*)$/)
+		{
+		    my ($userpart, $hostname) = ($1, $2);
+		    my ($leftaddr, $rightaddr) = ($userpart . '-left@' . $hostname, $userpart . '-right@' . $hostname);
+		    $oldForwardings->{$alias} = [$leftaddr, $rightaddr];
+		    $oldForwardings->{$leftaddr} = [@left];
+		    $oldForwardings->{$rightaddr} = [@right];
+		    $modified = 1;
+		}
+	    }
+	}
+    } while ($modified);
+
     return($oldForwardings);
 }
 
 
 
+sub main()
+{
+    my $oldForwardings = acceptInputForwardings();
+    $oldForwardings = detectTooLargeList($oldForwardings, 3);
 
-acceptInputForwardings();
+    print "Result: ", Dumper($oldForwardings);
+}
+
+main();
+
