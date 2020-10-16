@@ -107,7 +107,11 @@ FINI
 	where
 		s.school_id = ? 
 /*		and (sc.use_in_directory = 0 OR sc.use_in_directory is null) */
+
+    /* Email use */
 		and (sc.use_in_broadcast = 1) 
+		and (e.address is not null)
+		and (trim(e.address) != "")
 	order by sc.last_name, sc.first_name;
 
 FINI
