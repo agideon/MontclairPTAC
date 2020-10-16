@@ -163,7 +163,7 @@ FINI
     }
 
     $pageout->set_column(0, 0, 30);
-    $pageout->set_column(1, 2, 20);
+    $pageout->set_column(1, 4, 20);
 
     $dbh->commit;
 }
