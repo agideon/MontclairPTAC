@@ -41,7 +41,7 @@ sub main2()
 
 sub main()
 {
-    my ($dbUsername, $dbPassword, $dbName, $dbHostname, $dbPort);
+    my ($dbUsername, $dbPassword, $dbName, $dbHostname, $dbPort, $school);
     my ($outputFilename);
     my $inputErrors = 0;
     GetOptions('out=s'			=>	\$outputFilename,
@@ -50,7 +50,7 @@ sub main()
 	       'db|dbname=s'	=>	\$dbName,
 	       'dhhost|host=s'	=>	\$dbHostname,
 	       'dbport|port=s'	=>	\$dbPort,
-	       
+	       'school=i'	=>	\$school,
 	);
 
 	if (!$dbUsername) { $inputErrors = 1; }
@@ -58,12 +58,17 @@ sub main()
 	if (!$dbName) { $inputErrors = 1; }
 	if (!$dbHostname) { $dbHostname = '127.0.0.1'; }
 	if (!$dbPort) { $dbPort = 3306; }
+	if (!defined($school))
+	{
+	    $inputErrors = 1;
+	    print STDERR "A school must be specified\n";
+	}
 
 
 	if ($inputErrors)
 	{
 		print STDERR <<FINI;
-Usage: $0 --out <output xlsx file> --username <dbusername> --password <dbpassword> --dbname <dbname> --dbhost <db hostname> --dbport <db port #>
+Usage: $0 --out <output xlsx file> --username <dbusername> --password <dbpassword> --dbname <dbname> --dbhost <db hostname> --dbport <db port #> --school <school-id>
 FINI
 		die("\tCommand line options incorrect\n");
 	}
@@ -92,14 +97,25 @@ FINI
     
     my $query = <<FINI;
 
-    select distinct e.address "Email", sc.first_name as "Guardian first name",sc.last_name as "Guardian last name",s.first_name "Student first name",s.last_name "Student last name",s.grade from student_contact sc join student_student_contact ssc on sc.student_contact_id = ssc.student_contact_id join student s on ssc.student_id = s.student_id join student_contact_email sce on sce.student_contact_id = sc.student_contact_id join email e on e.email_id = sce.email_id where s.school_id = ? and (sc.use_in_directory = 0 OR sc.use_in_directory is null) and (sc.use_in_broadcast = 1) order by sc.last_name, sc.first_name;
+    select distinct e.address "Email", sc.first_name as "Guardian first name",
+		sc.last_name as "Guardian last name",s.first_name "Student first name",
+		s.last_name "Student last name",s.grade
+	from student_contact sc join student_student_contact ssc on sc.student_contact_id = ssc.student_contact_id
+		join student s on ssc.student_id = s.student_id
+		join student_contact_email sce on sce.student_contact_id = sc.student_contact_id
+		join email e on e.email_id = sce.email_id
+	where
+		s.school_id = ? 
+/*		and (sc.use_in_directory = 0 OR sc.use_in_directory is null) */
+		and (sc.use_in_broadcast = 1) 
+	order by sc.last_name, sc.first_name;
 
 FINI
 
     my $statement = $dbh->prepare($query) or die("Unable to prepare query " . $query . ": " . $dbh->err . ": " . $dbh->errstr);
     {
 	my $pindex = 0;
-	$statement->bind_param(++$pindex, 2220);
+	$statement->bind_param(++$pindex, $school);
     }
     {
 	my $query = $statement->{Statement}; # Just used for error reporting
@@ -129,6 +145,7 @@ FINI
 		my $dataFormat = $sheetout->add_format('align' => 'left', 'bold' => 0);
 		while (my @row = $statement->fetchrow_array())
 		{
+		    print STDERR "Row: ", join(', ', @row), "\n";
 		    $pageout->write_row($sheetRowIndex++, 0, 
 					\@row, $dataFormat);
 
