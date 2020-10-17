@@ -41,7 +41,7 @@ sub main2()
 
 sub main()
 {
-    my ($dbUsername, $dbPassword, $dbName, $dbHostname, $dbPort, $school);
+    my ($dbUsername, $dbPassword, $dbName, $dbHostname, $dbPort, $school, $useForEmailBcast, $useForDirectory);
     my ($outputFilename);
     my $inputErrors = 0;
     GetOptions('out=s'			=>	\$outputFilename,
@@ -51,6 +51,8 @@ sub main()
 	       'dhhost|host=s'	=>	\$dbHostname,
 	       'dbport|port=s'	=>	\$dbPort,
 	       'school=i'	=>	\$school,
+	       'email'		=>	\$useForEmailBcast,
+	       'directory'	=>	\$useForDirectory,
 	);
 
 	if (!$dbUsername) { $inputErrors = 1; }
@@ -62,6 +64,17 @@ sub main()
 	{
 	    $inputErrors = 1;
 	    print STDERR "A school must be specified\n";
+	}
+
+    	if (defined($useForEmailBcast) && defined($useForDirectory))
+	{
+	    $inputErrors = 1;
+	    print STDERR "Only one of --email and --directory may be specified\n";
+	}
+	elsif (!defined($useForEmailBcast) && !defined($useForDirectory))
+	{
+	    $inputErrors = 1;
+	    print STDERR "One of --email and --directory must be specified\n";
 	}
 
 
@@ -142,8 +155,8 @@ FINI
     {
 	my $pindex = 0;
 	$statement->bind_param(++$pindex, $school);
-	$statement->bind_param(++$pindex, 1); # Not 1 if listing those in directory
-	$statement->bind_param(++$pindex, 0); # Not 1 if listing those in email
+	$statement->bind_param(++$pindex, !$useForDirectory); # Not 1 if listing those in directory
+	$statement->bind_param(++$pindex, !$useForEmailBcast); # Not 1 if listing those in email
     }
     {
 	my $query = $statement->{Statement}; # Just used for error reporting
