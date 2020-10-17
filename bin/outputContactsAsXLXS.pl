@@ -182,6 +182,7 @@ sub setUpXLSXOutput
 	$pageout->set_column(3, 3, 13);
 	$pageout->set_column(4, 8, 25);
 	$pageout->set_column(9, 9, 5);
+	$sheetout;
     };
 
     return($writeHeaderRow, $writeDataRow, $finish);
