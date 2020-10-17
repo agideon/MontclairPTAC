@@ -110,9 +110,13 @@ create table student_contact
 	student_contact_id	INT AUTO_INCREMENT NOT NULL,
 	primary key(student_contact_id),
 
+
+	family_code_id	int not null,
+	foreign key (family_code_id) references family_code(family_code_id),
+
 	first_name	varchar(50) not null,
 	last_name	varchar(50) not null,
-	unique key (first_name, last_name), 
+	unique key (first_name, last_name, family_code_id), 
 
 	use_in_directory	    boolean null,
 	use_in_broadcast	    boolean null

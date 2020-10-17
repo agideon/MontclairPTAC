@@ -370,23 +370,28 @@ sub saveContact2Phones($$$$$$$)
 sub getContactEmailID($$$$$$$)
 {
     my ($dbh, $emailAddress, $contactID, $studentID, $schoolID, $homeroomID, $familyCodeID) = @_;
-    my $query = <<FINI;
-    insert into email(address)
-	values(?)
-	on duplicate key
-    update email_id=LAST_INSERT_ID(email_id);
-    select last_insert_id();
-    insert ignore into student_contact_email(email_id, student_contact_id)
-	values (last_insert_id(), ?);
+    my $rval;
+    if (defined($emailAddress) && ($emailAddress !~ /^\s*$/))
+    {
+	my $query = <<FINI;
+		insert into email(address)
+		values(?)
+		on duplicate key
+		    update email_id=LAST_INSERT_ID(email_id);
+		select last_insert_id();
+		insert ignore into student_contact_email(email_id, student_contact_id)
+			values (last_insert_id(), ?);
 FINI
 
-    my $statement = $dbh->prepare($query) or die("Unable to prepare query " . $query . ": " . $dbh->err . ": " . $dbh->errstr);
-    {
-	my $pindex = 0;
-	$statement->bind_param(++$pindex, $emailAddress);
-	$statement->bind_param(++$pindex, $contactID);
+    	my $statement = $dbh->prepare($query) or die("Unable to prepare query " . $query . ": " . $dbh->err . ": " . $dbh->errstr);
+	{
+	    my $pindex = 0;
+	    $statement->bind_param(++$pindex, $emailAddress);
+	    $statement->bind_param(++$pindex, $contactID);
+	}
+	$rval = processSimpleResults($statement, 2);
     }
-    return(processSimpleResults($statement, 2));
+    return($rval);
     
 }
 
@@ -416,8 +421,8 @@ sub getContactID($$$$$$$)
 	 $student->{'useForDirectory'});
 
     my $query = <<FINI;
-    insert into student_contact(first_name, last_name, use_in_broadcast, use_in_directory)
-	values(?, ?, ?, ?)
+    insert into student_contact(first_name, last_name, use_in_broadcast, use_in_directory, family_code_id)
+	values(?, ?, ?, ?, ?)
 	on duplicate key
     update 
 	student_contact_id=LAST_INSERT_ID(student_contact_id), 
@@ -435,6 +440,7 @@ FINI
 	$statement->bind_param(++$pindex, $lastName);
 	$statement->bind_param(++$pindex, $useForEmailBcast);
 	$statement->bind_param(++$pindex, $useForDirectory);
+	$statement->bind_param(++$pindex, $familyCodeID);
 	$statement->bind_param(++$pindex, $useForEmailBcast);
 	$statement->bind_param(++$pindex, $useForDirectory);
 	$statement->bind_param(++$pindex, $studentID);
@@ -653,6 +659,7 @@ FINI
 	for my $row (1..$pageMaxRow) # Note: Row 1 is column headers
 	{
 		my @rowData = Spreadsheet::Read::cellrow($page, $row);
+#		print 'Row data from spreadsheet ', $row, ': ', join(', ', @rowData), "\n";
 		if ($row == 1) # Note: Row 1 is column headers:
 		{
 			@rowHeaders = processHeaderRow(@rowData);
