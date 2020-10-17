@@ -43,7 +43,7 @@ sub getContacts
 {
     my ($dbName, $dbHostname, $dbPort, $dbUsername, $dbPassword, 
 	$school, $useForDirectory, $useForEmailBcast, 
-	$writeHeaderRow, $writeDataRow) = @_;
+	$writeHeaderRow, $writeDataRow, $finish) = @_;
     my @rval;
     my $dsn = "DBI:mysql:database=$dbName;host=$dbHostname;port=$dbPort;mysql_multi_statements=1";
     my $dbh = DBI->connect($dsn, $dbUsername, $dbPassword,
@@ -137,7 +137,7 @@ FINI
 
 
     $dbh->commit;
-
+    $finish->();
 }
 
 
@@ -207,30 +207,37 @@ FINI
     my $headerFormat = $sheetout->add_format('align' => 'center', 'bold' => 1);
     my $dataFormat = $sheetout->add_format('align' => 'left', 'bold' => 0);
 
-	my $sheetRowIndex = 0;
-	my $writeHeaderRow = sub
-	{
-	    my ($columnNames) = @_;
-	    $pageout->write_row($sheetRowIndex++, 0, $columnNames, $headerFormat);
-	};
-	my $writeDataRow = sub
-	{
-	    my ($row) = @_;
-	    $pageout->write_row($sheetRowIndex++, 0, 
-				$row, $dataFormat);
-	};
+    my $sheetRowIndex = 0;
+    my $writeHeaderRow = sub
+    {
+	my ($columnNames) = @_;
+	$pageout->write_row($sheetRowIndex++, 0, $columnNames, $headerFormat);
+	print STDERR 'Headers: ', join(', ', @$columnNames,), "\n";
+    };
+    my $writeDataRow = sub
+    {
+	my ($row) = @_;
+	$pageout->write_row($sheetRowIndex++, 0, 
+			    $row, $dataFormat);
+	print STDERR 'Row: ', $sheetRowIndex, '. ', join(', ', @$row), "\n";
+    };
+
+    my $finish = sub
+    {
+	$pageout->set_column(0, 0, 15);
+	$pageout->set_column(1, 2, 6);
+	$pageout->set_column(3, 3, 13);
+	$pageout->set_column(4, 8, 25);
+	$pageout->set_column(9, 9, 5);
+    };
+
+
 
     getContacts($dbName, $dbHostname, $dbPort, $dbUsername, $dbPassword, 
 		$school, $useForDirectory, $useForEmailBcast, 
-		$writeHeaderRow, $writeDataRow);
+		$writeHeaderRow, $writeDataRow, $finish);
 
 
-
-    $pageout->set_column(0, 0, 15);
-    $pageout->set_column(1, 2, 6);
-    $pageout->set_column(3, 3, 13);
-    $pageout->set_column(4, 8, 25);
-    $pageout->set_column(9, 9, 5);
 
 }
 
