@@ -39,6 +39,109 @@ sub main2()
     $pageout->write_row(0, 0, [1, 2, 'Hi, there', 3]);
 }
 
+sub getContacts
+{
+    my ($dbName, $dbHostname, $dbPort, $dbUsername, $dbPassword, 
+	$school, $useForDirectory, $useForEmailBcast, 
+	$writeHeaderRow, $writeDataRow) = @_;
+    my @rval;
+    my $dsn = "DBI:mysql:database=$dbName;host=$dbHostname;port=$dbPort;mysql_multi_statements=1";
+    my $dbh = DBI->connect($dsn, $dbUsername, $dbPassword,
+			   {
+			       AutoCommit => 0,
+			   },
+	) or die("Unable to connect to db: " . $DBI::errstr);
+    
+    my $query = <<FINI;
+
+    select
+		distinct
+
+		if(p.number is not null, p.number, "-") as "Phone Num",
+		if(scp.cellular>0 and scp.cellular is not null, "Cell", "-") as "Cell?",
+		if(scp.home>0 and scp.cellular is not null, "Home", "-") as "Home?",
+		if(scp.prime>0 and scp.cellular is not null, "Main-number", "-") as "Main Number?",
+
+		if(e.address is not null,e.address,"-") as "Email",
+
+		sc.first_name as "Guardian first name",
+		sc.last_name as "Guardian last name",s.first_name "Student first name",
+		s.last_name "Student last name",s.grade
+	from 
+		student_contact sc join student_student_contact ssc on sc.student_contact_id = ssc.student_contact_id
+		join student s on ssc.student_id = s.student_id
+
+		left outer join student_contact_phone scp on sc.student_contact_id = scp.student_contact_id
+		left outer join phone p on scp.phone_id = p.phone_id
+
+		left outer join student_contact_email sce on sc.student_contact_id = sce.student_contact_id
+		left outer join email e on sce.email_id = e.email_id
+	where
+		s.school_id = ?
+
+    /* Directory use */
+		and ((? = 1) OR (sc.use_in_directory = 1))
+
+    /* Email use */
+
+		and ((? = 1) OR
+			(
+			  (sc.use_in_broadcast = 1) 
+			and (e.address is not null)
+			and (trim(e.address) != "")
+			))
+	order by sc.last_name, sc.first_name
+
+
+FINI
+
+    my $statement = $dbh->prepare($query) or die("Unable to prepare query " . $query . ": " . $dbh->err . ": " . $dbh->errstr);
+    {
+	my $pindex = 0;
+	$statement->bind_param(++$pindex, $school);
+	$statement->bind_param(++$pindex, !$useForDirectory); # Not 1 if listing those in directory
+	$statement->bind_param(++$pindex, !$useForEmailBcast); # Not 1 if listing those in email
+    }
+    {
+	my $query = $statement->{Statement}; # Just used for error reporting
+	$statement->execute() or die("Unable to execute query " . $query . ": " . $statement->err . ": " . $statement->errstr);
+	
+	my $resultSet = 0;
+	do
+	{
+	    $resultSet++;
+	    my $rowCount = $statement->rows;
+	    my $columnCount = $statement->{'NUM_OF_FIELDS'} or 0;
+	    
+	    # It seems that an insert returns a row count of 1 (or perhaps more than that for multivalued inserts)
+	    # but a column count of 0 or undef.  So both should be checked (though perhaps only columnCount
+	    # is strictly required?).
+	    if (($rowCount > 0) && ($columnCount))
+	    {
+		# Column Headers
+		my $columnNames = $statement->{NAME};
+		$writeHeaderRow->($columnNames);
+
+		# Data Rows
+		while (my @row = $statement->fetchrow_array())
+		{
+		    $writeDataRow->(\@row);
+		}
+	    }
+	    else
+	    {
+		print STDERR "Skipping retrieval for result set ", $resultSet, ' with row count:', $rowCount, ' and column count: ', $columnCount, "\n";
+	    }
+	} while ($statement->more_results);
+    }
+
+
+    $dbh->commit;
+
+}
+
+
+
 sub main()
 {
     my ($dbUsername, $dbPassword, $dbName, $dbHostname, $dbPort, $school, $useForEmailBcast, $useForDirectory);
@@ -101,100 +204,27 @@ FINI
 
     my $pageout = $sheetout->add_worksheet('First Tab') or die "Unable to create sheet: $!";
 
-    my $dsn = "DBI:mysql:database=$dbName;host=$dbHostname;port=$dbPort;mysql_multi_statements=1";
-    my $dbh = DBI->connect($dsn, $dbUsername, $dbPassword,
-			   {
-			       AutoCommit => 0,
-			   },
-	) or die("Unable to connect to db: " . $DBI::errstr);
-    
-    my $query = <<FINI;
+    my $headerFormat = $sheetout->add_format('align' => 'center', 'bold' => 1);
+    my $dataFormat = $sheetout->add_format('align' => 'left', 'bold' => 0);
 
-    select
-		distinct
-
-		if(p.number is not null, p.number, "-") as "Phone",
-		if(scp.cellular>0 and scp.cellular is not null, "Cell", "-") as "Cell?",
-		if(scp.home>0 and scp.cellular is not null, "Home", "-") as "Home?",
-		if(scp.prime>0 and scp.cellular is not null, "Main-number", "-") as "Main Number?",
-
-		if(e.address is not null,e.address,"-") as "Email",
-
-		sc.first_name as "Guardian first name",
-		sc.last_name as "Guardian last name",s.first_name "Student first name",
-		s.last_name "Student last name",s.grade
-	from 
-		student_contact sc join student_student_contact ssc on sc.student_contact_id = ssc.student_contact_id
-		join student s on ssc.student_id = s.student_id
-
-		left outer join student_contact_phone scp on sc.student_contact_id = scp.student_contact_id
-		left outer join phone p on scp.phone_id = p.phone_id
-
-		left outer join student_contact_email sce on sc.student_contact_id = sce.student_contact_id
-		left outer join email e on sce.email_id = e.email_id
-	where
-		s.school_id = ?
-
-    /* Directory use */
-		and ((? = 1) OR (sc.use_in_directory = 1))
-
-    /* Email use */
-
-		and ((? = 1) OR
-			(
-			  (sc.use_in_broadcast = 1) 
-			and (e.address is not null)
-			and (trim(e.address) != "")
-			))
-	order by sc.last_name, sc.first_name
-
-
-FINI
-
-    my $statement = $dbh->prepare($query) or die("Unable to prepare query " . $query . ": " . $dbh->err . ": " . $dbh->errstr);
-    {
-	my $pindex = 0;
-	$statement->bind_param(++$pindex, $school);
-	$statement->bind_param(++$pindex, !$useForDirectory); # Not 1 if listing those in directory
-	$statement->bind_param(++$pindex, !$useForEmailBcast); # Not 1 if listing those in email
-    }
-    {
-	my $query = $statement->{Statement}; # Just used for error reporting
-	$statement->execute() or die("Unable to execute query " . $query . ": " . $statement->err . ": " . $statement->errstr);
-	
 	my $sheetRowIndex = 0;
-	my $resultSet = 0;
-	do
+	my $writeHeaderRow = sub
 	{
-	    $resultSet++;
-	    my $rowCount = $statement->rows;
-	    my $columnCount = $statement->{'NUM_OF_FIELDS'} or 0;
-	    
-	    # It seems that an insert returns a row count of 1 (or perhaps more than that for multivalued inserts)
-	    # but a column count of 0 or undef.  So both should be checked (though perhaps only columnCount
-	    # is strictly required?).
-	    if (($rowCount > 0) && ($columnCount))
-	    {
-		# Column Headers
-		my $columnNames = $statement->{NAME};
-		my $headerFormat = $sheetout->add_format('align' => 'center', 'bold' => 1);
-		$pageout->write_row($sheetRowIndex++, 0, $columnNames, $headerFormat);
+	    my ($columnNames) = @_;
+	    $pageout->write_row($sheetRowIndex++, 0, $columnNames, $headerFormat);
+	};
+	my $writeDataRow = sub
+	{
+	    my ($row) = @_;
+	    $pageout->write_row($sheetRowIndex++, 0, 
+				$row, $dataFormat);
+	};
 
-		# Data Rows
-		my $dataFormat = $sheetout->add_format('align' => 'left', 'bold' => 0);
-		while (my @row = $statement->fetchrow_array())
-		{
-		    $pageout->write_row($sheetRowIndex++, 0, 
-					\@row, $dataFormat);
+    getContacts($dbName, $dbHostname, $dbPort, $dbUsername, $dbPassword, 
+		$school, $useForDirectory, $useForEmailBcast, 
+		$writeHeaderRow, $writeDataRow);
 
-		}
-	    }
-	    else
-	    {
-		print STDERR "Skipping retrieval for result set ", $resultSet, ' with row count:', $rowCount, ' and column count: ', $columnCount, "\n";
-	    }
-	} while ($statement->more_results);
-    }
+
 
     $pageout->set_column(0, 0, 15);
     $pageout->set_column(1, 2, 6);
@@ -202,7 +232,6 @@ FINI
     $pageout->set_column(4, 8, 25);
     $pageout->set_column(9, 9, 5);
 
-    $dbh->commit;
 }
 
 main();
