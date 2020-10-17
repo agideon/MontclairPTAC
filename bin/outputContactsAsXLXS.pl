@@ -34,7 +34,14 @@ sub getContacts
 
 		sc.first_name as "Guardian first name",
 		sc.last_name as "Guardian last name",s.first_name "Student first name",
-		s.last_name "Student last name",s.grade
+		s.last_name "Student last name",s.grade,
+
+		if(sch.canonical_school_name is not null, sch.canonical_school_name, "-") as "School",
+
+		if(h.room is not null, h.room, "-") as "Room",
+		if(h.teacher is not null, h.teacher, "-") as "Teacher"
+
+
 	from 
 		student_contact sc join student_student_contact ssc on sc.student_contact_id = ssc.student_contact_id
 		join student s on ssc.student_id = s.student_id
@@ -44,6 +51,12 @@ sub getContacts
 
 		left outer join student_contact_email sce on sc.student_contact_id = sce.student_contact_id
 		left outer join email e on sce.email_id = e.email_id
+
+		left outer join homeroom h on s.homeroom_id = h.homeroom_id
+
+		left outer join school sch on s.school_id = sch.school_id
+
+
 	where
 		s.school_id = ?
 
@@ -149,6 +162,9 @@ sub setUpXLSXOutput
 	$pageout->set_column(3, 3, 13);
 	$pageout->set_column(4, 8, 25);
 	$pageout->set_column(9, 9, 5);
+	$pageout->set_column(10, 10, 10);
+	$pageout->set_column(11, 11, 5);
+	$pageout->set_column(12, 12, 18);
 	$sheetout;
     };
 
