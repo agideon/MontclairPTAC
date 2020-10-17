@@ -81,7 +81,7 @@ sub main()
 	if ($inputErrors)
 	{
 		print STDERR <<FINI;
-Usage: $0 --out <output xlsx file> --username <dbusername> --password <dbpassword> --dbname <dbname> --dbhost <db hostname> --dbport <db port #> --school <school-id>
+Usage: $0 --out <output xlsx file> --username <dbusername> --password <dbpassword> --dbname <dbname> --dbhost <db hostname> --dbport <db port #> --school <school-id> [--directory] [--email]
 FINI
 		die("\tCommand line options incorrect\n");
 	}
