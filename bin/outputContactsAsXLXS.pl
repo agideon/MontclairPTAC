@@ -165,6 +165,7 @@ sub setUpXLSXOutput
 	$pageout->set_column(10, 10, 10);
 	$pageout->set_column(11, 11, 5);
 	$pageout->set_column(12, 12, 18);
+	$pageout->freeze_panes(1, 0); # Freeze (or float) first row
 	$sheetout;
     };
 
