@@ -113,12 +113,12 @@ FINI
     select
 		distinct
 
-		if(p.number is not null, p.number, "-"),
-		if(scp.cellular>0 and scp.cellular is not null, "Cell", "-"),
-		if(scp.home>0 and scp.cellular is not null, "Home", "-"),
-		if(scp.prime>0 and scp.cellular is not null, "Main-number", "-"),
+		if(p.number is not null, p.number, "-") as "Phone",
+		if(scp.cellular>0 and scp.cellular is not null, "Cell", "-") as "Cell?",
+		if(scp.home>0 and scp.cellular is not null, "Home", "-") as "Home?",
+		if(scp.prime>0 and scp.cellular is not null, "Main-number", "-") as "Main Number?",
 
-		if(e.address is not null,e.address,"-"),
+		if(e.address is not null,e.address,"-") as "Email",
 
 		sc.first_name as "Guardian first name",
 		sc.last_name as "Guardian last name",s.first_name "Student first name",
@@ -175,8 +175,6 @@ FINI
 	    # is strictly required?).
 	    if (($rowCount > 0) && ($columnCount))
 	    {
-		print STDERR "Rows from result set ", $resultSet, "...\n";
-
 		# Column Headers
 		my $columnNames = $statement->{NAME};
 		my $headerFormat = $sheetout->add_format('align' => 'center', 'bold' => 1);
@@ -186,7 +184,6 @@ FINI
 		my $dataFormat = $sheetout->add_format('align' => 'left', 'bold' => 0);
 		while (my @row = $statement->fetchrow_array())
 		{
-		    print STDERR "Row: ", join(', ', @row), "\n";
 		    $pageout->write_row($sheetRowIndex++, 0, 
 					\@row, $dataFormat);
 
@@ -199,8 +196,11 @@ FINI
 	} while ($statement->more_results);
     }
 
-    $pageout->set_column(0, 0, 30);
-    $pageout->set_column(1, 4, 20);
+    $pageout->set_column(0, 0, 15);
+    $pageout->set_column(1, 2, 6);
+    $pageout->set_column(3, 3, 13);
+    $pageout->set_column(4, 8, 25);
+    $pageout->set_column(9, 9, 5);
 
     $dbh->commit;
 }
