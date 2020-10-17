@@ -58,9 +58,6 @@ sub getContacts
 
 
 	where
-		(lower(s.last_name) = "gideon" or lower(sc.last_name) = "gideon") and
-
-
 		s.school_id = ?
 
     /* Directory use */
