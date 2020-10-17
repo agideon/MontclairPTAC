@@ -58,6 +58,9 @@ sub getContacts
 
 
 	where
+		(lower(s.last_name) = "gideon" or lower(sc.last_name) = "gideon") and
+
+
 		s.school_id = ?
 
     /* Directory use */
@@ -179,7 +182,7 @@ sub main()
 {
     my ($dbUsername, $dbPassword, $dbName, $dbHostname, $dbPort, $school, $useForEmailBcast, $useForDirectory);
     my ($outputFilename);
-    my $inputErrors = 0;
+    my @inputErrors;
     GetOptions('out=s'			=>	\$outputFilename,
 	       'username|u=s'	=>	\$dbUsername,
 	       'password|p=s'	=>	\$dbPassword,
@@ -191,34 +194,28 @@ sub main()
 	       'directory'	=>	\$useForDirectory,
 	);
 
-	if (!$dbUsername) { $inputErrors = 1; }
-	if (!$dbPassword) { $inputErrors = 1; }
-	if (!$dbName) { $inputErrors = 1; }
+	if (!$dbUsername) { push(@inputErrors, "DB Username Required"); }
+	if (!$dbPassword) { push(@inputErrors, "DB Password Required"); }
+	if (!$dbName) { push(@inputErrors, "DB Name Required"); }
 	if (!$dbHostname) { $dbHostname = '127.0.0.1'; }
 	if (!$dbPort) { $dbPort = 3306; }
-	if (!defined($school))
-	{
-	    $inputErrors = 1;
-	    print STDERR "A school must be specified\n";
-	}
-
+	if (!defined($school)) { push(@inputErrors, "A school must be specified"); }
     	if (defined($useForEmailBcast) && defined($useForDirectory))
 	{
-	    $inputErrors = 1;
-	    print STDERR "Only one of --email and --directory may be specified\n";
+	    push(@inputErrors, "Only one of --email and --directory may be specified")
 	}
 	elsif (!defined($useForEmailBcast) && !defined($useForDirectory))
 	{
-	    $inputErrors = 1;
-	    print STDERR "One of --email and --directory must be specified\n";
+	    push(@inputErrors, "One of --email and --directory must be specified")
 	}
 
 
-	if ($inputErrors)
+	if (scalar(@inputErrors) > 0)
 	{
 		print STDERR <<FINI;
 Usage: $0 --out <output xlsx file> --username <dbusername> --password <dbpassword> --dbname <dbname> --dbhost <db hostname> --dbport <db port #> --school <school-id> [--directory] [--email]
 FINI
+		print "\t", join("\n\t", @inputErrors), "\n";
 		die("\tCommand line options incorrect\n");
 	}
 
