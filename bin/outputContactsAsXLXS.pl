@@ -7,7 +7,6 @@ use Getopt::Long;
 use DBI qw(:sql_types);
 
 
-
 sub main1()
 {
     my $csv = Text::CSV->new ({ binary => 1, auto_diag => 1 });
@@ -140,6 +139,55 @@ FINI
     $finish->();
 }
 
+sub setUpXLSXOutput
+{
+    my ($outputFilename) = @_;
+
+    my $sheetout;
+    if (defined($outputFilename))
+    {
+	$sheetout = Excel::Writer::XLSX->new($outputFilename) or
+	    die "Unable to open XLSX file $outputFilename for output: $!";
+    }
+    else
+    {
+	binmode(STDOUT);
+	$sheetout = Excel::Writer::XLSX->new( \*STDOUT );
+    }
+
+    my $pageout = $sheetout->add_worksheet('First Tab') or die "Unable to create sheet: $!";
+
+    my $headerFormat = $sheetout->add_format('align' => 'center', 'bold' => 1);
+    my $dataFormat = $sheetout->add_format('align' => 'left', 'bold' => 0);
+
+    my $sheetRowIndex = 0;
+    my $writeHeaderRow = sub
+    {
+	my ($columnNames) = @_;
+	$pageout->write_row($sheetRowIndex++, 0, $columnNames, $headerFormat);
+	print STDERR 'Headers: ', join(', ', @$columnNames,), "\n";
+    };
+    my $writeDataRow = sub
+    {
+	my ($row) = @_;
+	$pageout->write_row($sheetRowIndex++, 0, 
+			    $row, $dataFormat);
+	print STDERR 'Row: ', $sheetRowIndex, '. ', join(', ', @$row), "\n";
+    };
+
+    my $finish = sub
+    {
+	$pageout->set_column(0, 0, 15);
+	$pageout->set_column(1, 2, 6);
+	$pageout->set_column(3, 3, 13);
+	$pageout->set_column(4, 8, 25);
+	$pageout->set_column(9, 9, 5);
+    };
+
+    return($writeHeaderRow, $writeDataRow, $finish);
+
+
+}
 
 
 sub main()
@@ -190,49 +238,9 @@ FINI
 	}
 
 
-    my $sheetout;
-    if (defined($outputFilename))
-    {
-	$sheetout = Excel::Writer::XLSX->new($outputFilename) or
-	    die "Unable to open XLSX file $outputFilename for output: $!";
-    }
-    else
-    {
-	binmode(STDOUT);
-	$sheetout = Excel::Writer::XLSX->new( \*STDOUT );
-    }
-
-    my $pageout = $sheetout->add_worksheet('First Tab') or die "Unable to create sheet: $!";
-
-    my $headerFormat = $sheetout->add_format('align' => 'center', 'bold' => 1);
-    my $dataFormat = $sheetout->add_format('align' => 'left', 'bold' => 0);
-
-    my $sheetRowIndex = 0;
-    my $writeHeaderRow = sub
-    {
-	my ($columnNames) = @_;
-	$pageout->write_row($sheetRowIndex++, 0, $columnNames, $headerFormat);
-	print STDERR 'Headers: ', join(', ', @$columnNames,), "\n";
-    };
-    my $writeDataRow = sub
-    {
-	my ($row) = @_;
-	$pageout->write_row($sheetRowIndex++, 0, 
-			    $row, $dataFormat);
-	print STDERR 'Row: ', $sheetRowIndex, '. ', join(', ', @$row), "\n";
-    };
-
-    my $finish = sub
-    {
-	$pageout->set_column(0, 0, 15);
-	$pageout->set_column(1, 2, 6);
-	$pageout->set_column(3, 3, 13);
-	$pageout->set_column(4, 8, 25);
-	$pageout->set_column(9, 9, 5);
-    };
 
 
-
+    my ($writeHeaderRow, $writeDataRow, $finish) = setUpXLSXOutput($outputFilename);
     getContacts($dbName, $dbHostname, $dbPort, $dbUsername, $dbPassword, 
 		$school, $useForDirectory, $useForEmailBcast, 
 		$writeHeaderRow, $writeDataRow, $finish);
