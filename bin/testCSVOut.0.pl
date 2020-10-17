@@ -97,22 +97,44 @@ FINI
     
     my $query = <<FINI;
 
-    select distinct e.address "Email", sc.first_name as "Guardian first name",
+    select
+		distinct
+
+		if(p.number is not null, p.number, "-"),
+		if(scp.cellular>0 and scp.cellular is not null, "Cell", "-"),
+		if(scp.home>0 and scp.cellular is not null, "Home", "-"),
+		if(scp.prime>0 and scp.cellular is not null, "Main-number", "-"),
+
+		if(e.address is not null,e.address,"-"),
+
+		sc.first_name as "Guardian first name",
 		sc.last_name as "Guardian last name",s.first_name "Student first name",
 		s.last_name "Student last name",s.grade
-	from student_contact sc join student_student_contact ssc on sc.student_contact_id = ssc.student_contact_id
+	from 
+		student_contact sc join student_student_contact ssc on sc.student_contact_id = ssc.student_contact_id
 		join student s on ssc.student_id = s.student_id
-		join student_contact_email sce on sce.student_contact_id = sc.student_contact_id
-		join email e on e.email_id = sce.email_id
+
+		left outer join student_contact_phone scp on sc.student_contact_id = scp.student_contact_id
+		left outer join phone p on scp.phone_id = p.phone_id
+
+		left outer join student_contact_email sce on sc.student_contact_id = sce.student_contact_id
+		left outer join email e on sce.email_id = e.email_id
 	where
-		s.school_id = ? 
-/*		and (sc.use_in_directory = 0 OR sc.use_in_directory is null) */
+		s.school_id = ?
+
+    /* Directory use */
+		and ((? = 1) OR (sc.use_in_directory = 1))
 
     /* Email use */
-		and (sc.use_in_broadcast = 1) 
-		and (e.address is not null)
-		and (trim(e.address) != "")
-	order by sc.last_name, sc.first_name;
+
+		and ((? = 1) OR
+			(
+			  (sc.use_in_broadcast = 1) 
+			and (e.address is not null)
+			and (trim(e.address) != "")
+			))
+	order by sc.last_name, sc.first_name
+
 
 FINI
 
@@ -120,6 +142,8 @@ FINI
     {
 	my $pindex = 0;
 	$statement->bind_param(++$pindex, $school);
+	$statement->bind_param(++$pindex, 1); # Not 1 if listing those in directory
+	$statement->bind_param(++$pindex, 0); # Not 1 if listing those in email
     }
     {
 	my $query = $statement->{Statement}; # Just used for error reporting
