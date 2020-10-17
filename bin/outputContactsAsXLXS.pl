@@ -165,14 +165,12 @@ sub setUpXLSXOutput
     {
 	my ($columnNames) = @_;
 	$pageout->write_row($sheetRowIndex++, 0, $columnNames, $headerFormat);
-	print STDERR 'Headers: ', join(', ', @$columnNames,), "\n";
     };
     my $writeDataRow = sub
     {
 	my ($row) = @_;
 	$pageout->write_row($sheetRowIndex++, 0, 
 			    $row, $dataFormat);
-	print STDERR 'Row: ', $sheetRowIndex, '. ', join(', ', @$row), "\n";
     };
 
     my $finish = sub
