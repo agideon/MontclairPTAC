@@ -68,6 +68,8 @@ use Getopt::Long;
     {
 	'HIGH SCHOOL' => 'MHS',
 	'MT. HEBRON' => 'MTHEBRON',
+
+	
     };
 
 	registerTransformation(
@@ -125,10 +127,6 @@ use Getopt::Long;
 	my $dataRowHandler = sub {
 		my @row = @_;
 		my $grade;
-		if ($row[3] =~ /\b([k\d]+)/i)
-		{
-			$grade = uc($1);
-		}
 		push(@row, $grade);
 		return(@row);
 	};
