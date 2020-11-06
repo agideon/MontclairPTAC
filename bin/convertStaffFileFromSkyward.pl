@@ -88,6 +88,30 @@ use Getopt::Long;
 		
 }
 
+{
+    #############################################################
+    # Remove extraneous whitespace from first and last name
+    #
+	my $dataRowHandler = sub {
+		my @row = @_;
+		my $grade;
+		if ($row[0] =~ /^\s*(.*\S)\s*$/)
+		{
+		    $row[0] = $1;
+		}
+		if ($row[1] =~ /^\s*(.*\S)\s*$/)
+		{
+		    $row[1] = $1;
+		}
+		push(@row, $grade);
+		return(@row);
+	};
+
+	registerTransformation(
+		{
+			'dataRow'		=> $dataRowHandler,
+		});
+}
 
 ######################################################################
 # This transformation adds a grade column, extracting the grade - where
