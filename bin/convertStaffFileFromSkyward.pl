@@ -94,7 +94,6 @@ use Getopt::Long;
     #
 	my $dataRowHandler = sub {
 		my @row = @_;
-		my $grade;
 		if ($row[0] =~ /^\s*(.*\S)\s*$/)
 		{
 		    $row[0] = $1;
@@ -103,7 +102,6 @@ use Getopt::Long;
 		{
 		    $row[1] = $1;
 		}
-		push(@row, $grade);
 		return(@row);
 	};
 
