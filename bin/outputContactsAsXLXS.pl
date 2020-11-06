@@ -58,7 +58,7 @@ sub getContacts
 
 
 	where
-		s.school_id = ?
+		sch.district_school_id = ?
 
 		/* Avoid contact-free rows - only accept rows with either a phone or email */
 		and ((p.number is not null) or (e.address is not null))
@@ -191,7 +191,7 @@ sub main()
 	       'db|dbname=s'	=>	\$dbName,
 	       'dhhost|host=s'	=>	\$dbHostname,
 	       'dbport|port=s'	=>	\$dbPort,
-	       'school=i'	=>	\$school,
+	       'school=s'	=>	\$school,
 	       'email'		=>	\$useForEmailBcast,
 	       'directory'	=>	\$useForDirectory,
 	);
