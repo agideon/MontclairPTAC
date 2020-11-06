@@ -60,6 +60,11 @@ sub getContacts
 	where
 		s.school_id = ?
 
+		/* Avoid contact-free rows - only accept rows with either a phone or email */
+		and ((p.number is not null) or (e.address is not null))
+
+
+
     /* Directory use */
 		and ((? = 1) OR (sc.use_in_directory = 1))
 
