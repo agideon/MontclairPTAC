@@ -32,11 +32,11 @@ sub getContacts
 		sc.last_name as "Guardian last name",
 
 		/* Email */
-		if(e.address is not null,e.address,"-") as "Email",
+		if(e.address is not null,e.address,"") as "Email",
 
 
 		/* Mobile */
-		if(cell_p.number is not null, cell_p.number, "-") as "Cell Phone Number?"
+		if(cell_p.number is not null, cell_p.number, "") as "Cell Phone Number?"
 
 
 	from 
