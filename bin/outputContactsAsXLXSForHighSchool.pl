@@ -84,6 +84,7 @@ sub getContacts
 	where
 		s.grade in (8,9,10,11)
 
+/*
 		and
 		(cell_scp.cellular = 1)
 
@@ -92,7 +93,7 @@ sub getContacts
 
 		and
 		(prime_scp.prime = 1)
-
+ */
 
 
 		/* Avoid contact-free rows - only accept rows with either a phone or email */
@@ -168,9 +169,16 @@ FINI
 sub enquoteOptionally($)
 {
     my ($text) = @_;
-    if ($text =~ /[\",]/)
+    if (defined($text))
     {
-	$text = enquote($text);
+	if ($text =~ /[\",]/)
+	{
+	    $text = enquote($text);
+	}
+    }
+    else
+    {
+	$text = '""';
     }
     return($text);
 }
