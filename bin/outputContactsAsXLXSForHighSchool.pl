@@ -36,27 +36,7 @@ sub getContacts
 
 
 		/* Mobile */
-		if(cell_p.number is not null, cell_p.number, "-") as "Cell Phone Number?",
-		cell_scp.student_contact_id as "cell student_student_contact.student_contact_id",
-		cell_scp.phone_id as "cell student_student_contact.phone_id",
-
-		if(home_p.number is not null, home_p.number, "-") as "Home Phone Number?",
-		home_scp.student_contact_id as "home student_student_contact.student_contact_id",
-		home_scp.phone_id as "home student_student_contact.phone_id",
-
-		if(prime_p.number is not null, prime_p.number, "-") as "Prime Phone Number?",
-		prime_scp.student_contact_id as "prime student_student_contact.student_contact_id",
-		prime_scp.phone_id as "prime student_student_contact.phone_id",
-
-		/* Temporary: Grade */
-		s.grade as "Grade",
-
-
-
-		if(sch.canonical_school_name is not null, sch.canonical_school_name, "-") as "School",
-
-		if(h.room is not null, h.room, "-") as "Room",
-		if(h.teacher is not null, h.teacher, "-") as "Teacher"
+		if(cell_p.number is not null, cell_p.number, "-") as "Cell Phone Number?"
 
 
 	from 
@@ -66,14 +46,6 @@ sub getContacts
 		left outer join student_contact_phone cell_scp on sc.student_contact_id = cell_scp.student_contact_id
 			and cell_scp.cellular = 1
 		left outer join phone cell_p on cell_scp.phone_id = cell_p.phone_id
-
-		left outer join student_contact_phone home_scp on sc.student_contact_id = home_scp.student_contact_id
-			and home_scp.home = 1
-		left outer join phone home_p on home_scp.phone_id = home_p.phone_id
-
-		left outer join student_contact_phone prime_scp on sc.student_contact_id = prime_scp.student_contact_id
-			and prime_scp.prime = 1
-		left outer join phone prime_p on prime_scp.phone_id = prime_p.phone_id
 
 
 		left outer join student_contact_email sce on sc.student_contact_id = sce.student_contact_id
@@ -91,12 +63,8 @@ sub getContacts
 		/* Avoid contact-free rows - only accept rows with either a phone or email */
 		and (
 			(cell_p.number is not null)
-			or (home_p.number is not null)
-			or (prime_p.number is not null)
 			or (e.address is not null)
 		    )
-
-
 
     /* Directory use */
 		and ((? = 1) OR (sc.use_in_directory = 1))
