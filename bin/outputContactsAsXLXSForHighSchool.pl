@@ -64,12 +64,15 @@ sub getContacts
 		join student s on ssc.student_id = s.student_id
 
 		left outer join student_contact_phone cell_scp on sc.student_contact_id = cell_scp.student_contact_id
+			and cell_scp.cellular = 1
 		left outer join phone cell_p on cell_scp.phone_id = cell_p.phone_id
 
 		left outer join student_contact_phone home_scp on sc.student_contact_id = home_scp.student_contact_id
+			and home_scp.home = 1
 		left outer join phone home_p on home_scp.phone_id = home_p.phone_id
 
 		left outer join student_contact_phone prime_scp on sc.student_contact_id = prime_scp.student_contact_id
+			and prime_scp.prime = 1
 		left outer join phone prime_p on prime_scp.phone_id = prime_p.phone_id
 
 
@@ -83,17 +86,6 @@ sub getContacts
 
 	where
 		s.grade in (8,9,10,11)
-
-/*
-		and
-		(cell_scp.cellular = 1)
-
-		and
-		(home_scp.home = 1)
-
-		and
-		(prime_scp.prime = 1)
- */
 
 
 		/* Avoid contact-free rows - only accept rows with either a phone or email */
