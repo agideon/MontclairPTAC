@@ -131,7 +131,7 @@ sub enquoteOptionally($)
     my ($text) = @_;
     if (defined($text))
     {
-	if ($text =~ /[\",]/)
+	if ($text =~ /[\",\s]/)
 	{
 	    $text = enquote($text);
 	}
