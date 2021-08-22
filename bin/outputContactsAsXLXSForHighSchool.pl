@@ -187,7 +187,7 @@ sub setupCSVOutput
 {
     my ($outputFilename) = @_;
 
-    my $out = FileHandle->new($outputFilename, O_WRONLY|O_TRUNC) or
+    my $out = FileHandle->new($outputFilename, O_WRONLY|O_TRUNC|O_CREAT) or
 	die "Unable to open CSV file $outputFilename for output: $!";
 
     my $writeHeaderRow = sub
