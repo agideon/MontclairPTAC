@@ -34,15 +34,19 @@ sub getContacts
 		/* Email */
 		if(e.address is not null,e.address,"-") as "Email",
 
-		CASE
-			when scp.cellular>0 and scp.cellular is not null then "Mobile"
-			when scp.home>0 and scp.home is not null then "Home"
-			when scp.prime>0 and scp.prime is not null then "Prime"
-			else "None"
-		END as "Phone Type",
 
+		/* Mobile */
+		if(cell_p.number is not null, cell_p.number, "-") as "Cell Phone Number?",
+		cell_scp.student_contact_id as "cell student_student_contact.student_contact_id",
+		cell_scp.phone_id as "cell student_student_contact.phone_id",
 
-		if(p.number is not null, p.number, "-") as "Phone Number?",
+		if(home_p.number is not null, home_p.number, "-") as "Home Phone Number?",
+		home_scp.student_contact_id as "home student_student_contact.student_contact_id",
+		home_scp.phone_id as "home student_student_contact.phone_id",
+
+		if(prime_p.number is not null, prime_p.number, "-") as "Prime Phone Number?",
+		prime_scp.student_contact_id as "prime student_student_contact.student_contact_id",
+		prime_scp.phone_id as "prime student_student_contact.phone_id",
 
 		/* Temporary: Grade */
 		s.grade as "Grade",
@@ -59,8 +63,15 @@ sub getContacts
 		student_contact sc join student_student_contact ssc on sc.student_contact_id = ssc.student_contact_id
 		join student s on ssc.student_id = s.student_id
 
-		left outer join student_contact_phone scp on sc.student_contact_id = scp.student_contact_id
-		left outer join phone p on scp.phone_id = p.phone_id
+		left outer join student_contact_phone cell_scp on sc.student_contact_id = cell_scp.student_contact_id
+		left outer join phone cell_p on cell_scp.phone_id = cell_p.phone_id
+
+		left outer join student_contact_phone home_scp on sc.student_contact_id = home_scp.student_contact_id
+		left outer join phone home_p on home_scp.phone_id = home_p.phone_id
+
+		left outer join student_contact_phone prime_scp on sc.student_contact_id = prime_scp.student_contact_id
+		left outer join phone prime_p on prime_scp.phone_id = prime_p.phone_id
+
 
 		left outer join student_contact_email sce on sc.student_contact_id = sce.student_contact_id
 		left outer join email e on sce.email_id = e.email_id
@@ -73,8 +84,24 @@ sub getContacts
 	where
 		s.grade in (8,9,10,11)
 
+		and
+		(cell_scp.cellular = 1)
+
+		and
+		(home_scp.home = 1)
+
+		and
+		(prime_scp.prime = 1)
+
+
+
 		/* Avoid contact-free rows - only accept rows with either a phone or email */
-		and ((p.number is not null) or (e.address is not null))
+		and (
+			(cell_p.number is not null)
+			or (home_p.number is not null)
+			or (prime_p.number is not null)
+			or (e.address is not null)
+		    )
 
 
 
