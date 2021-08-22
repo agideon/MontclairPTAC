@@ -25,16 +25,29 @@ sub getContacts
     select
 		distinct
 
-		if(p.number is not null, p.number, "-") as "Phone Num",
-		if(scp.cellular>0 and scp.cellular is not null, "Cell", "-") as "Cell?",
-		if(scp.home>0 and scp.cellular is not null, "Home", "-") as "Home?",
-		if(scp.prime>0 and scp.cellular is not null, "Main-number", "-") as "Main Number?",
+		/* First name */
+		sc.first_name as "Guardian first name",
 
+		/* Last name */
+		sc.last_name as "Guardian last name",
+
+		/* Email */
 		if(e.address is not null,e.address,"-") as "Email",
 
-		sc.first_name as "Guardian first name",
-		sc.last_name as "Guardian last name",s.first_name "Student first name",
-		s.last_name "Student last name",s.grade,
+		CASE
+			when scp.cellular>0 and scp.cellular is not null then "Mobile"
+			when scp.home>0 and scp.home is not null then "Home"
+			when scp.prime>0 and scp.prime is not null then "Prime"
+			else "None"
+		END as "Phone Type",
+
+
+		if(p.number is not null, p.number, "-") as "Phone Number?",
+
+		/* Temporary: Grade */
+		s.grade as "Grade",
+
+
 
 		if(sch.canonical_school_name is not null, sch.canonical_school_name, "-") as "School",
 
