@@ -38,7 +38,7 @@ FINI
 
 	# my @headerRowIn = Spreadsheet::Read::row($pageIn, 1);
 	my @headerRowIn = $pageIn->row(1);
-	print STDERR "Header row: ", Dumper(\@headerRowIn);
+	# print STDERR "Header row: ", Dumper(\@headerRowIn);
 
 	# These don't seem useful, mostly because there's no width information
 	# for my $colIndex (1..$pageInMaxCol)
@@ -88,11 +88,11 @@ FINI
 		if ($widths->{$school}->[$cellIndex] < length($rowData[$cellIndex] . ' '))
 		{
 		    $widths->{$school}->[$cellIndex] = length($rowData[$cellIndex] . ' ');
-		    if ($cellIndex ==0)
-		    {
-			print STDERR 'Setting width of column 0 in ', $school, ' to ',
-			    $widths->{$school}->[$cellIndex], "\n";
-		    }
+		    # if ($cellIndex ==0)
+		    # {
+		    # print STDERR 'Setting width of column 0 in ', $school, ' to ',
+		    # $widths->{$school}->[$cellIndex], "\n";
+		    # }
 		}
 		push(@rowDataWithWidth, {
 		    'width' => $widths->{$school}->[$cellIndex],
