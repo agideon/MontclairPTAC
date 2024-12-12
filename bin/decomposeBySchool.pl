@@ -48,6 +48,7 @@ FINI
 	# }
 
 
+	my @widths;
 	my $outputSheets = {};
 	# Loop over data rows
 	for my $rowIndex (2..$pageInMaxRow) # Reminder: Row 1 is column headers
@@ -69,8 +70,28 @@ FINI
 		    or die("Cannot open output file " . $filenameOut . ": " . $!);
 		$outputSheets->{$school}->addrow(@headerRowIn);
 	    }
-	    
-	    $outputSheets->{$school}->addrow(@rowData);
+
+	    my @rowDataWithWidth;
+	    for my $cellIndex (0 .. $pageInMaxCol-1)
+	    {
+		$widths[$cellIndex] ||= 0;
+		if ($widths[$cellIndex] < length($rowData[$cellIndex] . ''))
+		{
+		    $widths[$cellIndex] = length($rowData[$cellIndex] . '');
+		    if ($cellIndex ==0)
+		    {
+			print STDERR 'Setting width of column 0 to ', $widths[$cellIndex], "\n";
+		    }
+		}
+		push(@rowDataWithWidth, {
+		    'width' => $widths[$cellIndex],
+			'content' => $rowData[$cellIndex],
+		     });
+	    }
+
+	    $outputSheets->{$school}->addrow(@rowDataWithWidth);
+
+
 	}
 }
 
