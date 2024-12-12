@@ -48,7 +48,7 @@ FINI
 	# }
 
 
-	my @widths;
+	my $widths = {};
 	my $outputSheets = {};
 	# Loop over data rows
 	for my $rowIndex (2..$pageInMaxRow) # Reminder: Row 1 is column headers
@@ -71,20 +71,31 @@ FINI
 		$outputSheets->{$school}->addrow(@headerRowIn);
 	    }
 
+	    # Build cell data for output including width for the column.  Some
+	    # cells' data will force a column's width to expand.
 	    my @rowDataWithWidth;
 	    for my $cellIndex (0 .. $pageInMaxCol-1)
 	    {
-		$widths[$cellIndex] ||= 0;
-		if ($widths[$cellIndex] < length($rowData[$cellIndex] . ''))
+		# Note concatenation of the cell data with a string to force it to be
+		# interpreted as a string rather than a number for length().  This also
+		# makes it easy to add some "padding".
+
+		# Reasonable initial widths
+		$widths->{$school} ||= [];
+		$widths->{$school}->[$cellIndex] ||= length($headerRowIn[$cellIndex] . '');
+
+		# Set a new column width if a cell's value exceeds the current width for this column
+		if ($widths->{$school}->[$cellIndex] < length($rowData[$cellIndex] . ' '))
 		{
-		    $widths[$cellIndex] = length($rowData[$cellIndex] . '');
+		    $widths->{$school}->[$cellIndex] = length($rowData[$cellIndex] . ' ');
 		    if ($cellIndex ==0)
 		    {
-			print STDERR 'Setting width of column 0 to ', $widths[$cellIndex], "\n";
+			print STDERR 'Setting width of column 0 in ', $school, ' to ',
+			    $widths->{$school}->[$cellIndex], "\n";
 		    }
 		}
 		push(@rowDataWithWidth, {
-		    'width' => $widths[$cellIndex],
+		    'width' => $widths->{$school}->[$cellIndex],
 			'content' => $rowData[$cellIndex],
 		     });
 	    }
