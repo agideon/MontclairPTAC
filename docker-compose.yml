@@ -1,0 +1,67 @@
+services:
+  app:
+    build:
+      context: app
+    container_name: montclairptac-app
+    restart: no
+    image: montclairptac-app
+    env_file:
+      - path: /.env
+        required: false
+    environment:
+      - MYSQL_PASSWORD=userpass
+      - MYSQL_DATABASE=db
+      - MYSQL_USER=user
+      - MYSQL_HOST=montclairptac-db0
+      - NONINTERACTIVE_TESTING=1
+      - PERL_MM_USE_DEFAULT=1
+    networks:
+      - montclairptac-net
+    profiles:
+      - app
+    volumes:
+      - ${PWD}/app/bin:/app/bin
+      - ${PWD}/app/db:/app/db
+      - ${PWD}/app/tmp:/app/tmp
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+    depends_on:
+      db:
+        condition: service_healthy
+
+
+
+  db:
+    image: mysql/mysql-server:8.0.32
+    container_name: montclairptac-db0
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    env_file:
+      - path: /.env
+        required: false
+    environment:
+      - MYSQL_ROOT_PASSWORD=db
+      - MYSQL_DATABASE=db
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=userpass
+      - MYSQL_ROOT_HOST=%
+    networks:
+      - montclairptac-net
+    healthcheck:
+      # test: mysqladmin ping
+      test: mysql --user=root --password=db --execute="SHOW DATABASES;"
+      start_period: 10s
+      interval: 5s
+      retries: 5
+    volumes:
+      - montclairptac-dbdata0:/var/lib/mysql
+
+
+
+
+volumes:
+  montclairptac-dbdata0:
+
+networks:
+  montclairptac-net:
