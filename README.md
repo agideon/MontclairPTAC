@@ -3,7 +3,7 @@
 Note that this is currently configured for ease of development.  The primary
 consequences of this are:
 - The DB running in a container is not well secured.
-  - To correct this, make proper use of `.env` files not in `git.
+  - To correct this, make proper use of `.env` files not in `git`.
 - The application files are mounted from the file system rather than contained in the app container.
   - To correct this, use `COPY` within the `Dockerfile` instead of the mountings in `volumes` in the `docker-compose` file.
 
@@ -39,7 +39,7 @@ This means that one can edit scripts in `app/bin` from outside the container
 (with one's usual editor) and then run them within the container (thereby
 using the libraries, utilities, etc. in the container plus the MySQL container's
 data server) for testing.  This is a non-standard way to use Docker, but
-it speed the development cycle.
+it speeds the development cycle.
 
 ### Database
 
