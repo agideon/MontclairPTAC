@@ -21,7 +21,9 @@ container.
 This is a no-op container from Docker's perspective: it starts and
 does nothing.  It is intended for use by people via:
 
+```
   docker exec -it montclairptac-app bash
+```
 
 From that internal shell, one can run the various commands
 provided by this software to deal with the student data
