@@ -68,6 +68,22 @@ use Getopt::Long;
     {
 	'HIGH SCHOOL' => 'MHS',
 	'MT. HEBRON' => 'MTHEBRON',
+	'Dev Learning Center' => 'DEVELOPMENTAL LEARNING CENTER',
+	'BRADFORD' => 'BRADFORD ELEMENTARY SCHOOL',
+	'BUZZ' => 'BUZZ ALDRIN MIDDLE SCHOOL',
+	'CHARLES' => 'CHARLES H. BULLOCK SCHOOL',
+	'BULLOCK' => 'CHARLES H. BULLOCK SCHOOL',
+	'CHB' => 'CHARLES H. BULLOCK SCHOOL',
+	'DEVELOPMENTAL' => 'DEVELOPMENTAL LEARNING CENTER',
+	'EDGEMONT' => 'EDGEMONT ELEMENTARY SCHOOL',
+	'GLENFIELD' => 'GLENFIELD MIDDLE SCHOOL',
+	'HILLSIDE' => 'HILLSIDE ELEMENTARY SCHOOL',
+	'NISHUANE' => 'NISHUANE ELEMENTARY SCHOOL',
+	'NORTHEAST' => 'NORTHEAST ELEMENTARY SCHOOL',
+	'RENAISSANCE' => 'RENAISSANCE MIDDLE SCHOOL AT THE RAND BUILDING',
+	'WATCHUNG' => 'WATCHUNG ELEMENTARY SCHOOL',
+
+	
     };
 
 	registerTransformation(
@@ -88,6 +104,28 @@ use Getopt::Long;
 		
 }
 
+{
+    #############################################################
+    # Remove extraneous whitespace from first and last name
+    #
+	my $dataRowHandler = sub {
+		my @row = @_;
+		if ($row[0] =~ /^\s*(.*\S)\s*$/)
+		{
+		    $row[0] = $1;
+		}
+		if ($row[1] =~ /^\s*(.*\S)\s*$/)
+		{
+		    $row[1] = $1;
+		}
+		return(@row);
+	};
+
+	registerTransformation(
+		{
+			'dataRow'		=> $dataRowHandler,
+		});
+}
 
 ######################################################################
 # This transformation adds a grade column, extracting the grade - where
@@ -103,10 +141,6 @@ use Getopt::Long;
 	my $dataRowHandler = sub {
 		my @row = @_;
 		my $grade;
-		if ($row[3] =~ /\b([k\d]+)/i)
-		{
-			$grade = uc($1);
-		}
 		push(@row, $grade);
 		return(@row);
 	};
